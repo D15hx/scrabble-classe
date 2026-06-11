@@ -211,6 +211,7 @@ function handleMsg(msg){
   }
   else if(msg.type==='next_turn'){
     state.current=msg.current;state.myTurn=state.current===state.myIndex;
+    state.placed={};state.selected=null;
     if(msg.log)addLog(msg.log[msg.log.length-1]);
     renderTurnInfo();renderScores();
     setStatus(state.myTurn?'C\'est ton tour !':`Tour de ${msg.currentName}`,state.myTurn?'ok':'info');
