@@ -24,8 +24,6 @@ body{font-family:system-ui,sans-serif;background:#f5f4f0;color:#222;min-height:1
 .btn-danger:hover{background:#791F1F}
 .btn-success{background:#3B6D11;color:#fff}
 .btn-success:hover{background:#27500A}
-.btn-warn{background:#B45309;color:#fff}
-.btn-warn:hover{background:#92400E}
 .divider{text-align:center;color:#999;font-size:13px;margin:1rem 0;position:relative}
 .divider::before,.divider::after{content:'';position:absolute;top:50%;width:43%;height:1px;background:#e0e0e0}
 .divider::before{left:0}.divider::after{right:0}
@@ -57,15 +55,16 @@ body{font-family:system-ui,sans-serif;background:#f5f4f0;color:#222;min-height:1
 .cell.pending-cell{background:#fde68a;color:#412402;border:1.5px dashed #f59e0b;font-weight:600}
 .cell.fixed{background:#C0DD97;color:#173404;border-color:#639922;font-weight:600;cursor:default}
 .cell .pts{position:absolute;bottom:1px;right:2px;opacity:.7}
-.sidebar{width:230px;flex-shrink:0;background:#fff;border-left:1px solid #e0e0de;display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:8px}
+.sidebar{width:330px;flex-shrink:0;background:#fff;border-left:1px solid #e0e0de;display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:8px}
 .section-title{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center}
-.rack{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;padding:2px}
-.tile{width:30px;height:38px;flex-shrink:0;border-radius:8px;background:#FAC775;border:1.5px solid #EF9F27;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;font-size:14px;font-weight:600;color:#412402;user-select:none;position:relative;transition:transform .1s}
+.rack{display:flex;gap:5px;flex-wrap:nowrap;padding:2px}
+.tile{width:38px;height:46px;flex-shrink:0;border-radius:8px;background:#FAC775;border:1.5px solid #EF9F27;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;font-size:17px;font-weight:600;color:#412402;user-select:none;position:relative;transition:transform .1s}
 .tile:hover{transform:translateY(-2px)}
-.tile .pts{font-size:7px;position:absolute;bottom:2px;right:2px;color:#633806}
+.tile .pts{font-size:8px;position:absolute;bottom:2px;right:3px;color:#633806}
 .tile.selected{border:2px solid #185FA5;background:#B5D4F4;color:#042C53;transform:translateY(-4px)}
 .tile.joker{background:#D3D1C7;color:#2C2C2A;border-color:#888}
 .tile.exchange-mode{border-color:#B45309;box-shadow:0 0 0 2px rgba(180,83,9,0.3)}
+.tile.new-tile{border-color:#DC2626;border-width:2.5px;box-shadow:0 0 0 2px rgba(220,38,38,0.25)}
 .tile.dragging{opacity:0.4}
 .tile.drag-over{border-color:#185FA5;border-width:2px}
 .action-btns{display:flex;flex-direction:column;gap:5px}
@@ -136,7 +135,7 @@ const BONUSES={};
 [[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],[6,2],[6,6],[6,8],[6,12],[7,3],[7,11],[8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],[12,6],[12,8],[14,3],[14,11]].forEach(([r,c])=>BONUSES[r+'_'+c]='DL');
 const LETTER_DATA={A:{v:1},B:{v:3},C:{v:2},D:{v:2},E:{v:1},F:{v:4},G:{v:2},H:{v:4},I:{v:1},J:{v:8},K:{v:10},L:{v:1},M:{v:2},N:{v:1},O:{v:1},P:{v:3},Q:{v:8},R:{v:1},S:{v:1},T:{v:1},U:{v:1},V:{v:4},W:{v:10},X:{v:10},Y:{v:10},Z:{v:10},'?':{v:0}};
 
-let ws, state={myIndex:-1,myRack:[],board:Array.from({length:15},()=>Array(15).fill(null)),placed:{},current:0,scores:[],playerNames:[],isProf:false,selected:null,bagCount:0,myTurn:false,exchangeMode:false};
+let ws, state={myIndex:-1,myRack:[],board:Array.from({length:15},()=>Array(15).fill(null)),placed:{},current:0,scores:[],playerNames:[],isProf:false,selected:null,bagCount:0,myTurn:false,exchangeMode:false,newTileIdx:null,newTileTurnsLeft:0};
 let dragSrcIdx=null;
 
 function calcCellSize(){
@@ -189,7 +188,10 @@ function handleMsg(msg){
     document.getElementById('prof-badge').innerHTML=state.isProf?'<span class="prof-badge">PROF</span>':'';
     render();setStatus('La partie commence !','ok');
   }
-  else if(msg.type==='your_rack'){state.myRack=msg.rack;renderRack();}
+  else if(msg.type==='your_rack'){
+    if(msg.exchangedIdx!==undefined){ state.newTileIdx=msg.exchangedIdx; state.newTileTurnsLeft=2; }
+    state.myRack=msg.rack;renderRack();
+  }
   else if(msg.type==='tiles_placed'){
     if(msg.playerIndex!==state.myIndex){state.placed=msg.placed;renderBoard();}
   }
@@ -227,152 +229,6 @@ function handleMsg(msg){
     state.placed={};
     state.selected=null;
     state.exchangeMode=false;
+    if(state.myTurn && state.newTileTurnsLeft>0){ state.newTileTurnsLeft--; if(state.newTileTurnsLeft===0) state.newTileIdx=null; }
     document.getElementById('exchange-hint').style.display='none';
-    if(msg.log)addLog(msg.log[msg.log.length-1]);
-    renderTurnInfo();
-    renderScores();
-    renderBoard();
-    renderRack();
-    setStatus(state.myTurn?'C\'est ton tour !':`Tour de ${msg.currentName}`,state.myTurn?'ok':'info');
-  }
-  else if(msg.type==='error'){setStatus(msg.message,'err');document.getElementById('action-btns').style.display='flex';}
-  else if(msg.type==='game_over'){showGameOver(msg.scores);}
-  else if(msg.type==='player_left'){setStatus(`${msg.name} a quitté.`,'err');}
-}
-
-function render(){calcCellSize();renderBoard();renderRack();renderScores();renderTurnInfo();document.getElementById('bag-info').textContent=`Lettres: ${state.bagCount}`;}
-function renderScores(){document.getElementById('scores-wrap').innerHTML=state.playerNames.map((n,i)=>`<span class="score-pill ${i===state.current?'active':''}">${n}: ${state.scores[i]||0}</span>`).join('');}
-function renderTurnInfo(){document.getElementById('turn-info').textContent=state.myTurn?'👉 Ton tour':`Tour de ${state.playerNames[state.current]||''}`;}
-
-function renderBoard(){
-  const cs=calcCellSize();
-  const board=document.getElementById('board');
-  board.innerHTML='';
-  const fs=Math.max(8,Math.floor(cs*0.32));
-  const pfs=Math.max(6,Math.floor(cs*0.2));
-  for(let r=0;r<15;r++) for(let c=0;c<15;c++){
-    const key=r+'_'+c,cell=document.createElement('div');
-    cell.style.width=cs+'px';cell.style.height=cs+'px';
-    const fixed=state.board[r][c],placed=state.placed[key];
-    if(fixed){
-      cell.className='cell fixed';
-      cell.style.fontSize=Math.max(10,Math.floor(cs*0.5))+'px';
-      cell.innerHTML=fixed.l+`<span class="pts" style="font-size:${pfs}px">${LETTER_DATA[fixed.l]?.v||0}</span>`;
-    } else if(placed){
-      cell.className='cell '+(state.myTurn?'placed':'pending-cell');
-      cell.style.fontSize=Math.max(10,Math.floor(cs*0.5))+'px';
-      cell.innerHTML=placed+`<span class="pts" style="font-size:${pfs}px">${LETTER_DATA[placed]?.v||0}</span>`;
-      if(state.myTurn)cell.onclick=()=>recallTile(r,c);
-    } else {
-      const b=BONUSES[key];
-      if(r===7&&c===7){
-        cell.className='cell star';
-        cell.style.fontSize=Math.floor(cs*0.55)+'px';
-        cell.textContent='★';
-      } else if(b){
-        cell.className='cell '+b;
-        cell.style.fontSize=fs+'px';
-        cell.innerHTML=b==='TW'?'Mot<br>×3':b==='DW'?'Mot<br>×2':b==='TL'?'Let.<br>×3':'Let.<br>×2';
-      } else {
-        cell.className='cell';
-      }
-      cell.onclick=()=>placeOnBoard(r,c);
-    }
-    board.appendChild(cell);
-  }
-}
-
-function renderRack(){
-  const el=document.getElementById('rack');el.innerHTML='';
-  state.myRack.forEach((l,i)=>{
-    if(state.placed['rack_'+i])return;
-    const t=document.createElement('div');
-    t.className='tile'+(l==='?'?' joker':'')+(state.selected===i?' selected':'')+(state.exchangeMode?' exchange-mode':'');
-    t.innerHTML=l+`<span class="pts">${l==='?'?0:LETTER_DATA[l]?.v||0}</span>`;
-    t.draggable=true;
-    t.dataset.idx=i;
-    t.onclick=()=>{
-      if(state.exchangeMode){ exchangeTile(i); return; }
-      state.selected=state.selected===i?null:i; renderRack();
-    };
-    t.addEventListener('dragstart',(e)=>{ dragSrcIdx=i; t.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
-    t.addEventListener('dragend',()=>{ t.classList.remove('dragging'); });
-    t.addEventListener('dragover',(e)=>{ e.preventDefault(); t.classList.add('drag-over'); });
-    t.addEventListener('dragleave',()=>{ t.classList.remove('drag-over'); });
-    t.addEventListener('drop',(e)=>{
-      e.preventDefault(); t.classList.remove('drag-over');
-      if(dragSrcIdx===null||dragSrcIdx===i)return;
-      const rack=state.myRack;
-      const tmp=rack[dragSrcIdx];
-      rack.splice(dragSrcIdx,1);
-      rack.splice(i,0,tmp);
-      dragSrcIdx=null;
-      renderRack();
-    });
-    el.appendChild(t);
-  });
-}
-
-function toggleExchangeMode(){
-  if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}
-  state.exchangeMode=!state.exchangeMode;
-  state.selected=null;
-  document.getElementById('exchange-hint').style.display=state.exchangeMode?'block':'none';
-  document.getElementById('exchange-toggle').textContent=state.exchangeMode?'Annuler échange':'Échanger une lettre';
-  renderRack();
-}
-
-function exchangeTile(idx){
-  send({type:'exchange_tile',tileIndex:idx});
-  state.exchangeMode=false;
-  document.getElementById('exchange-hint').style.display='none';
-  document.getElementById('exchange-toggle').textContent='Échanger une lettre';
-}
-
-function placeOnBoard(r,c){
-  if(state.exchangeMode)return;
-  const key=r+'_'+c;
-  if(state.board[r][c]||state.placed[key])return;
-  if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}
-  if(state.selected===null){setStatus('Sélectionne d\'abord une lettre.','');return;}
-  let letter=state.myRack[state.selected];
-  if(letter==='?')letter=(prompt('Lettre pour le joker (A-Z):')||'A').toUpperCase().charAt(0);
-  state.placed[key]=letter;state.placed['rack_'+state.selected]=true;state.selected=null;
-  send({type:'place_tiles',placed:state.placed});renderBoard();renderRack();
-  setStatus('Lettre posée. Continue ou soumets le mot.','');
-}
-
-function recallTile(r,c){
-  const key=r+'_'+c;if(!state.placed[key])return;
-  const letter=state.placed[key];
-  for(let k in state.placed){if(k.startsWith('rack_')){const idx=parseInt(k.split('_')[1]);if(state.myRack[idx]===letter){delete state.placed['rack_'+idx];break;}}}
-  delete state.placed[key];send({type:'place_tiles',placed:state.placed});renderBoard();renderRack();
-}
-
-function recallTiles(){state.placed={};state.selected=null;send({type:'place_tiles',placed:{}});renderBoard();renderRack();}
-function submitWord(){if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}send({type:'submit_word'});}
-function validateWord(accepted){send({type:'validate_word',accepted});document.getElementById('pending-banner').innerHTML='';}
-function passTurn(){if(!state.myTurn)return;send({type:'pass_turn'});}
-
-function addLog(line){
-  if(!line)return;
-  const el=document.getElementById('log-area'),d=document.createElement('div');
-  d.className='log-line';d.textContent=line;el.insertBefore(d,el.firstChild);
-}
-function setStatus(text,type){
-  const el=document.getElementById('status-msg');el.textContent=text;
-  el.style.background=type==='ok'?'#EAF3DE':type==='err'?'#FCEBEB':type==='info'?'#E6F1FB':'#f5f4f0';
-  el.style.color=type==='ok'?'#3B6D11':type==='err'?'#A32D2D':type==='info'?'#185FA5':'#555';
-  el.style.border=type==='ok'?'1px solid #97C459':type==='err'?'1px solid #F09595':type==='info'?'1px solid #85B7EB':'none';
-}
-function showLobbyMsg(html,type){const el=document.getElementById('lobby-msg');el.className='msg-box msg-'+type;el.innerHTML=html;}
-function showGameOver(scores){
-  const sorted=[...scores].sort((a,b)=>b.score-a.score),winner=sorted[0];
-  const div=document.createElement('div');div.className='game-over-overlay';
-  div.innerHTML=`<div class="game-over-card"><h2>🏆 Fin de partie !</h2><p style="color:#555;margin-bottom:1rem">${winner.name} gagne avec ${winner.score} points !</p>${sorted.map(p=>`<div class="score-row"><span>${p.name}</span><strong>${p.score} pts</strong></div>`).join('')}<button class="btn btn-primary" style="margin-top:1.5rem" onclick="location.reload()">Nouvelle partie</button></div>`;
-  document.body.appendChild(div);
-}
-window.addEventListener('resize',()=>{if(document.getElementById('game').style.display==='flex')renderBoard();});
-</script>
-</body>
-</html>
+    if(msg.log)addLog(msg.log
