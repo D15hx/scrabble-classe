@@ -179,6 +179,25 @@ wss.on('connection', (ws)=>{
       broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,passed:room.playerNames[ws.playerIndex],log:game.log});
     }
 
+    else if(msg.type==='exchange_tile'){
+      const room=rooms[ws.roomCode];if(!room||!room.game)return;
+      const game=room.game;if(game.current!==ws.playerIndex)return;
+      if(game.bag.length===0){sendTo(ws,{type:'error',message:'Plus de lettres dans le sac pour échanger.'});return;}
+      const player=game.players[ws.playerIndex];
+      const idx=msg.tileIndex;
+      if(idx===undefined||idx<0||idx>=player.rack.length){sendTo(ws,{type:'error',message:'Lettre invalide.'});return;}
+      const oldLetter=player.rack[idx];
+      game.bag.unshift(oldLetter);
+      for(let i=game.bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[game.bag[i],game.bag[j]]=[game.bag[j],game.bag[i]];}
+      const newLetter=game.bag.pop();
+      player.rack[idx]=newLetter;
+      game.placed={};game.pass=0;
+      game.log.push(`🔄 ${room.playerNames[ws.playerIndex]} a échangé une lettre`);
+      sendTo(ws,{type:'your_rack',rack:player.rack});
+      game.current=(game.current+1)%game.players.length;
+      broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
+    }
+
     else if(msg.type==='ping'){sendTo(ws,{type:'pong'});}
   });
 
