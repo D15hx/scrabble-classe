@@ -193,7 +193,7 @@ wss.on('connection', (ws)=>{
       player.rack[idx]=newLetter;
       game.placed={};game.pass=0;
       game.log.push(`🔄 ${room.playerNames[ws.playerIndex]} a échangé une lettre`);
-      sendTo(ws,{type:'your_rack',rack:player.rack});
+      sendTo(ws,{type:'your_rack',rack:player.rack,exchangedIdx:idx});
       game.current=(game.current+1)%game.players.length;
       broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
     }
