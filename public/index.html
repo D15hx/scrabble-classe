@@ -3,380 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scrabble Classe</title>
+<title>Mes Jeux de Classe</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#f5f4f0;color:#222;min-height:100vh;overflow:hidden}
-#lobby{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
-.lobby-card{background:#fff;border-radius:12px;padding:2rem;width:100%;max-width:420px;box-shadow:0 2px 16px rgba(0,0,0,0.08)}
-.lobby-card h1{font-size:22px;font-weight:600;margin-bottom:4px}
-.subtitle{color:#666;font-size:14px;margin-bottom:1.5rem}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:13px;color:#555;margin-bottom:4px;font-weight:500}
-.field input,.field select{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff}
-.field input:focus,.field select:focus{outline:none;border-color:#378ADD}
-.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500;transition:background .15s}
-.btn-primary{background:#185FA5;color:#fff;width:100%}
-.btn-primary:hover{background:#0C447C}
-.btn-secondary{background:#f0f0ee;color:#333;border:1px solid #ddd}
-.btn-secondary:hover{background:#e8e8e4}
-.btn-danger{background:#A32D2D;color:#fff}
-.btn-danger:hover{background:#791F1F}
-.btn-success{background:#3B6D11;color:#fff}
-.btn-success:hover{background:#27500A}
-.divider{text-align:center;color:#999;font-size:13px;margin:1rem 0;position:relative}
-.divider::before,.divider::after{content:'';position:absolute;top:50%;width:43%;height:1px;background:#e0e0e0}
-.divider::before{left:0}.divider::after{right:0}
-.code-box{background:#EAF3DE;border:1px solid #97C459;border-radius:8px;padding:1rem;text-align:center;margin:1rem 0}
-.code-big{font-size:32px;font-weight:700;color:#3B6D11;letter-spacing:6px}
-.code-hint{font-size:12px;color:#639922;margin-top:4px}
-.msg-box{padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px}
-.msg-err{background:#FCEBEB;color:#A32D2D;border:1px solid #F09595}
-.msg-ok{background:#EAF3DE;color:#3B6D11;border:1px solid #97C459}
-#game{display:none;flex-direction:column;height:100vh}
-.top-bar{background:#fff;border-bottom:1px solid #e0e0de;padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
-.scores-wrap{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-.score-pill{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#f0f0ee;color:#333;border:1px solid #ddd}
-.score-pill.active{background:#185FA5;color:#fff;border-color:#185FA5}
-.turn-info{font-size:12px;color:#555}
-.bag-info{font-size:12px;color:#777}
-.prof-badge{background:#EAF3DE;color:#3B6D11;border:1px solid #97C459;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
-.main-area{display:flex;flex:1;overflow:hidden}
-#board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
-#board{display:grid;gap:1px}
-.cell{display:flex;align-items:center;justify-content:center;font-weight:500;cursor:pointer;border:0.5px solid #ccc;background:#e8e6df;color:#888;user-select:none;position:relative;transition:background .1s;border-radius:2px;flex-direction:column;line-height:1.1;text-align:center}
-.cell:hover{border-color:#888}
-.cell.TW{background:#F0997B;color:#4A1B0C}
-.cell.DW{background:#F4C0D1;color:#4B1528}
-.cell.TL{background:#85B7EB;color:#042C53}
-.cell.DL{background:#B5D4F4;color:#042C53}
-.cell.star{background:#F4C0D1;color:#4B1528}
-.cell.placed{background:#FAC775;color:#412402;border-color:#EF9F27;font-weight:600}
-.cell.pending-cell{background:#fde68a;color:#412402;border:1.5px dashed #f59e0b;font-weight:600}
-.cell.fixed{background:#C0DD97;color:#173404;border-color:#639922;font-weight:600;cursor:default}
-.cell .pts{position:absolute;bottom:1px;right:2px;opacity:.7}
-.sidebar{width:330px;flex-shrink:0;background:#fff;border-left:1px solid #e0e0de;display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:8px}
-.section-title{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center}
-.rack{display:flex;gap:5px;flex-wrap:nowrap;padding:2px}
-.tile{width:38px;height:46px;flex-shrink:0;border-radius:8px;background:#FAC775;border:1.5px solid #EF9F27;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;font-size:17px;font-weight:600;color:#412402;user-select:none;position:relative;transition:transform .1s}
-.tile:hover{transform:translateY(-2px)}
-.tile .pts{font-size:8px;position:absolute;bottom:2px;right:3px;color:#633806}
-.tile.selected{border:2px solid #185FA5;background:#B5D4F4;color:#042C53;transform:translateY(-4px)}
-.tile.joker{background:#D3D1C7;color:#2C2C2A;border-color:#888}
-.tile.exchange-mode{border-color:#B45309;box-shadow:0 0 0 2px rgba(180,83,9,0.3)}
-.tile.new-tile{border-color:#DC2626;border-width:2.5px;box-shadow:0 0 0 2px rgba(220,38,38,0.25)}
-.tile.dragging{opacity:0.4}
-.tile.drag-over{border-color:#185FA5;border-width:2px}
-.action-btns{display:flex;flex-direction:column;gap:5px}
-.action-btns .btn{width:100%;text-align:center;padding:7px;font-size:12px}
-.log-area{flex:1;overflow-y:auto;min-height:0}
-.log-line{font-size:11px;color:#555;padding:3px 0;border-bottom:0.5px solid #f0f0ee}
-.pending-banner{background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:8px;font-size:12px}
-.pending-banner strong{color:#92400E;display:block;margin-bottom:4px}
-.pending-actions{display:flex;gap:5px;margin-top:6px}
-.pending-actions .btn{flex:1;padding:6px;font-size:12px}
-#status-msg{font-size:12px;padding:6px 8px;border-radius:8px;background:#f5f4f0;color:#555;min-height:32px}
-.game-over-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100}
-.game-over-card{background:#fff;border-radius:12px;padding:2rem;max-width:360px;width:90%;text-align:center}
-.game-over-card h2{font-size:22px;margin-bottom:1rem}
-.score-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:15px}
-.exchange-hint{font-size:11px;color:#92400E;background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;padding:6px 8px}
-.link-btn{font-size:10px;color:#185FA5;cursor:pointer;text-decoration:underline;background:none;border:none}
+body{font-family:system-ui,sans-serif;background:#f5f4f0;color:#222;min-height:100vh;padding:2rem 1rem}
+.wrap{max-width:760px;margin:0 auto}
+header{text-align:center;margin-bottom:2.5rem}
+header h1{font-size:28px;font-weight:700;margin-bottom:6px}
+header p{color:#666;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:#fff;border-radius:14px;padding:1.5rem;text-decoration:none;color:#222;box-shadow:0 2px 12px rgba(0,0,0,0.06);transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:8px}
+.card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.1)}
+.card .emoji{font-size:36px}
+.card h2{font-size:18px;font-weight:600}
+.card p{font-size:13px;color:#666;line-height:1.4}
+.card .tag{font-size:11px;font-weight:600;color:#185FA5;background:#E6F1FB;padding:3px 9px;border-radius:20px;align-self:flex-start;margin-top:4px}
+footer{text-align:center;margin-top:3rem;color:#999;font-size:12px}
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <h1>🎲 Mes Jeux de Classe</h1>
+    <p>Une sélection de jeux multijoueurs pour la classe</p>
+  </header>
 
-<div id="lobby">
-  <div class="lobby-card">
-    <h1>🔤 Scrabble Classe</h1>
-    <p class="subtitle">Scrabble français multijoueur pour la classe</p>
-    <div id="lobby-msg"></div>
-    <div class="field"><label>Ton prénom</label><input id="player-name" placeholder="Ex: Marie" maxlength="20"/></div>
-    <div class="field"><label>Rôle</label><select id="role"><option value="student">Étudiant(e)</option><option value="prof">Professeur (peut valider les mots)</option></select></div>
-    <div class="field"><label>Nombre de joueurs (si tu crées)</label><select id="max-players"><option value="2">2 joueurs</option><option value="3">3 joueurs</option><option value="4">4 joueurs</option></select></div>
-    <button class="btn btn-primary" onclick="createRoom()">Créer une partie</button>
-    <div class="divider">ou</div>
-    <div class="field"><label>Code de la salle</label><input id="room-code" placeholder="Ex: ABC12" maxlength="5" style="text-transform:uppercase"/></div>
-    <button class="btn btn-primary" onclick="joinRoom()">Rejoindre</button>
+  <div class="grid">
+    <a class="card" href="/scrabble/">
+      <div class="emoji">🔤</div>
+      <h2>Scrabble Classe</h2>
+      <p>Scrabble français multijoueur avec validation par le professeur.</p>
+      <span class="tag">2-4 joueurs</span>
+    </a>
   </div>
+
+  <footer>Fait avec ❤️ pour la classe</footer>
 </div>
-
-<div id="game">
-  <div class="top-bar">
-    <div class="scores-wrap" id="scores-wrap"></div>
-    <span id="turn-info" class="turn-info"></span>
-    <span id="bag-info" class="bag-info"></span>
-    <span id="prof-badge"></span>
-  </div>
-  <div class="main-area">
-    <div id="board-wrap"><div id="board"></div></div>
-    <div class="sidebar">
-      <div id="status-msg"></div>
-      <div id="pending-banner"></div>
-      <div class="section-title"><span>Mon chevalet</span><button class="link-btn" onclick="toggleExchangeMode()" id="exchange-toggle">Échanger une lettre</button></div>
-      <div id="exchange-hint" style="display:none" class="exchange-hint">Clique sur une lettre à échanger. Ça terminera ton tour.</div>
-      <div class="rack" id="rack"></div>
-      <div class="action-btns" id="action-btns">
-        <button class="btn btn-primary" onclick="submitWord()">Soumettre ✓</button>
-        <button class="btn btn-secondary" onclick="recallTiles()">↩ Rappeler</button>
-        <button class="btn btn-secondary" onclick="passTurn()">Passer le tour</button>
-      </div>
-      <div class="section-title">Historique</div>
-      <div class="log-area" id="log-area"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-const BONUSES={};
-[[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]].forEach(([r,c])=>BONUSES[r+'_'+c]='TW');
-[[1,1],[2,2],[3,3],[4,4],[10,10],[11,11],[12,12],[13,13],[1,13],[2,12],[3,11],[4,10],[10,4],[11,3],[12,2],[13,1]].forEach(([r,c])=>BONUSES[r+'_'+c]='DW');
-[[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],[9,1],[9,5],[9,9],[9,13],[13,5],[13,9]].forEach(([r,c])=>BONUSES[r+'_'+c]='TL');
-[[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],[6,2],[6,6],[6,8],[6,12],[7,3],[7,11],[8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],[12,6],[12,8],[14,3],[14,11]].forEach(([r,c])=>BONUSES[r+'_'+c]='DL');
-const LETTER_DATA={A:{v:1},B:{v:3},C:{v:2},D:{v:2},E:{v:1},F:{v:4},G:{v:2},H:{v:4},I:{v:1},J:{v:8},K:{v:10},L:{v:1},M:{v:2},N:{v:1},O:{v:1},P:{v:3},Q:{v:8},R:{v:1},S:{v:1},T:{v:1},U:{v:1},V:{v:4},W:{v:10},X:{v:10},Y:{v:10},Z:{v:10},'?':{v:0}};
-
-let ws, state={myIndex:-1,myRack:[],board:Array.from({length:15},()=>Array(15).fill(null)),placed:{},current:0,scores:[],playerNames:[],isProf:false,selected:null,bagCount:0,myTurn:false,exchangeMode:false,newTileIdx:null,newTileTurnsLeft:0};
-let dragSrcIdx=null;
-
-function calcCellSize(){
-  const bw=document.getElementById('board-wrap');
-  const avail=Math.min(bw.clientWidth-16,bw.clientHeight-16);
-  const cs=Math.max(20,Math.floor(avail/15));
-  const b=document.getElementById('board');
-  b.style.gridTemplateColumns=`repeat(15,${cs}px)`;
-  b.style.gridTemplateRows=`repeat(15,${cs}px)`;
-  return cs;
-}
-
-function getWsUrl(){return(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host;}
-function connect(cb){ws=new WebSocket(getWsUrl());ws.onopen=cb;ws.onmessage=e=>handleMsg(JSON.parse(e.data));ws.onclose=()=>setStatus('Connexion perdue. Recharge la page.','err');setInterval(()=>{if(ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},25000);}
-function send(data){if(ws&&ws.readyState===1)ws.send(JSON.stringify(data));}
-
-function createRoom(){
-  const name=document.getElementById('player-name').value.trim();
-  if(!name){showLobbyMsg('Entre ton prénom.','err');return;}
-  const isProf=document.getElementById('role').value==='prof';
-  const max=parseInt(document.getElementById('max-players').value);
-  connect(()=>send({type:'create_room',name,isProf,maxPlayers:max}));
-  state.isProf=isProf;
-}
-function joinRoom(){
-  const name=document.getElementById('player-name').value.trim();
-  const code=document.getElementById('room-code').value.trim().toUpperCase();
-  if(!name){showLobbyMsg('Entre ton prénom.','err');return;}
-  if(!code){showLobbyMsg('Entre le code.','err');return;}
-  const isProf=document.getElementById('role').value==='prof';
-  connect(()=>send({type:'join_room',name,code,isProf}));
-  state.isProf=isProf;
-}
-
-function handleMsg(msg){
-  if(msg.type==='room_created'){
-    state.myIndex=msg.playerIndex;
-    document.getElementById('lobby').innerHTML=`<div class="lobby-card"><h1>🔤 Scrabble Classe</h1><p class="subtitle">Donne ce code à tes joueurs :</p><div class="code-box"><div class="code-big">${msg.code}</div><div class="code-hint">Code de la salle</div></div><p style="font-size:13px;color:#666;text-align:center">En attente des autres joueurs...</p></div>`;
-  }
-  else if(msg.type==='room_joined'){state.myIndex=msg.playerIndex;}
-  else if(msg.type==='player_joined'){
-    const card=document.querySelector('.lobby-card');
-    if(card)card.innerHTML+=`<p style="font-size:13px;color:#3B6D11;margin-top:8px">👤 ${msg.players[msg.count-1]} a rejoint (${msg.count}/${msg.max})</p>`;
-  }
-  else if(msg.type==='game_start'){
-    state.board=msg.game.board;state.scores=msg.game.scores;state.playerNames=msg.game.playerNames;
-    state.current=msg.game.current;state.bagCount=msg.game.bagCount;state.myTurn=state.current===state.myIndex;
-    document.getElementById('lobby').style.display='none';
-    document.getElementById('game').style.display='flex';
-    document.getElementById('prof-badge').innerHTML=state.isProf?'<span class="prof-badge">PROF</span>':'';
-    render();setStatus('La partie commence !','ok');
-  }
-  else if(msg.type==='your_rack'){
-    if(msg.exchangedIdx!==undefined){ state.newTileIdx=msg.exchangedIdx; state.newTileTurnsLeft=2; }
-    state.myRack=msg.rack;renderRack();
-  }
-  else if(msg.type==='tiles_placed'){
-    if(msg.playerIndex!==state.myIndex){state.placed=msg.placed;renderBoard();}
-  }
-  else if(msg.type==='word_pending'){
-    state.placed=msg.placed;renderBoard();
-    if(state.isProf){
-      const detail=msg.words&&msg.words.length>1?msg.words.map(w=>`"${w.word}" +${w.score}pts`).join(' + '):`"${msg.word}"`;
-      document.getElementById('pending-banner').innerHTML=`<div class="pending-banner"><strong>Soumis par ${msg.playerName} :</strong>${detail} = ${msg.score} pts<div class="pending-actions"><button class="btn btn-success" onclick="validateWord(true)">✓ Valider</button><button class="btn btn-danger" onclick="validateWord(false)">✗ Refuser</button></div></div>`;
-    } else if(msg.playerIndex===state.myIndex){
-      setStatus(`Soumis (${msg.score} pts). En attente du prof...`,'info');
-      document.getElementById('action-btns').style.display='none';
-    } else {
-      setStatus(`${msg.playerName} a soumis. En attente du prof...`,'info');
-    }
-  }
-  else if(msg.type==='word_accepted'){
-    state.board=msg.board;state.scores=msg.scores;state.bagCount=msg.bagCount;state.placed={};
-    if(msg.log)addLog(msg.log[msg.log.length-1]);
-    document.getElementById('pending-banner').innerHTML='';
-    document.getElementById('action-btns').style.display='flex';
-    renderBoard();renderScores();
-    document.getElementById('bag-info').textContent=`Lettres: ${msg.bagCount}`;
-    setStatus(`✓ "${msg.word}" +${msg.score} pts`,'ok');
-  }
-  else if(msg.type==='word_refused'){
-    state.placed={};
-    document.getElementById('pending-banner').innerHTML='';
-    document.getElementById('action-btns').style.display='flex';
-    renderBoard();
-    if(msg.playerIndex!==state.myIndex)setStatus(`"${msg.word}" refusé.`,'err');
-  }
-  else if(msg.type==='next_turn'){
-    state.current=msg.current;
-    state.myTurn=state.current===state.myIndex;
-    state.placed={};
-    state.selected=null;
-    state.exchangeMode=false;
-    if(state.myTurn && state.newTileTurnsLeft>0){ state.newTileTurnsLeft--; if(state.newTileTurnsLeft===0) state.newTileIdx=null; }
-    document.getElementById('exchange-hint').style.display='none';
-    if(msg.log)addLog(msg.log[msg.log.length-1]);
-    renderTurnInfo();
-    renderScores();
-    renderBoard();
-    renderRack();
-    setStatus(state.myTurn?'C\'est ton tour !':`Tour de ${msg.currentName}`,state.myTurn?'ok':'info');
-  }
-  else if(msg.type==='error'){setStatus(msg.message,'err');document.getElementById('action-btns').style.display='flex';}
-  else if(msg.type==='game_over'){showGameOver(msg.scores);}
-  else if(msg.type==='player_left'){setStatus(`${msg.name} a quitté.`,'err');}
-}
-
-function render(){calcCellSize();renderBoard();renderRack();renderScores();renderTurnInfo();document.getElementById('bag-info').textContent=`Lettres: ${state.bagCount}`;}
-function renderScores(){document.getElementById('scores-wrap').innerHTML=state.playerNames.map((n,i)=>`<span class="score-pill ${i===state.current?'active':''}">${n}: ${state.scores[i]||0}</span>`).join('');}
-function renderTurnInfo(){document.getElementById('turn-info').textContent=state.myTurn?'👉 Ton tour':`Tour de ${state.playerNames[state.current]||''}`;}
-
-function renderBoard(){
-  const cs=calcCellSize();
-  const board=document.getElementById('board');
-  board.innerHTML='';
-  const fs=Math.max(8,Math.floor(cs*0.32));
-  const pfs=Math.max(6,Math.floor(cs*0.2));
-  for(let r=0;r<15;r++) for(let c=0;c<15;c++){
-    const key=r+'_'+c,cell=document.createElement('div');
-    cell.style.width=cs+'px';cell.style.height=cs+'px';
-    const fixed=state.board[r][c],placed=state.placed[key];
-    if(fixed){
-      cell.className='cell fixed';
-      cell.style.fontSize=Math.max(10,Math.floor(cs*0.5))+'px';
-      cell.innerHTML=fixed.l+`<span class="pts" style="font-size:${pfs}px">${LETTER_DATA[fixed.l]?.v||0}</span>`;
-    } else if(placed){
-      cell.className='cell '+(state.myTurn?'placed':'pending-cell');
-      cell.style.fontSize=Math.max(10,Math.floor(cs*0.5))+'px';
-      cell.innerHTML=placed+`<span class="pts" style="font-size:${pfs}px">${LETTER_DATA[placed]?.v||0}</span>`;
-      if(state.myTurn)cell.onclick=()=>recallTile(r,c);
-    } else {
-      const b=BONUSES[key];
-      if(r===7&&c===7){
-        cell.className='cell star';
-        cell.style.fontSize=Math.floor(cs*0.55)+'px';
-        cell.textContent='★';
-      } else if(b){
-        cell.className='cell '+b;
-        cell.style.fontSize=fs+'px';
-        cell.innerHTML=b==='TW'?'Mot<br>×3':b==='DW'?'Mot<br>×2':b==='TL'?'Let.<br>×3':'Let.<br>×2';
-      } else {
-        cell.className='cell';
-      }
-      cell.onclick=()=>placeOnBoard(r,c);
-    }
-    board.appendChild(cell);
-  }
-}
-
-function renderRack(){
-  const el=document.getElementById('rack');el.innerHTML='';
-  state.myRack.forEach((l,i)=>{
-    if(state.placed['rack_'+i])return;
-    const t=document.createElement('div');
-    t.className='tile'+(l==='?'?' joker':'')+(state.selected===i?' selected':'')+(state.exchangeMode?' exchange-mode':'')+(state.newTileIdx===i?' new-tile':'');
-    t.innerHTML=l+`<span class="pts">${l==='?'?0:LETTER_DATA[l]?.v||0}</span>`;
-    t.draggable=true;
-    t.dataset.idx=i;
-    t.onclick=()=>{
-      if(state.exchangeMode){ exchangeTile(i); return; }
-      state.selected=state.selected===i?null:i; renderRack();
-    };
-    t.addEventListener('dragstart',(e)=>{ dragSrcIdx=i; t.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
-    t.addEventListener('dragend',()=>{ t.classList.remove('dragging'); });
-    t.addEventListener('dragover',(e)=>{ e.preventDefault(); t.classList.add('drag-over'); });
-    t.addEventListener('dragleave',()=>{ t.classList.remove('drag-over'); });
-    t.addEventListener('drop',(e)=>{
-      e.preventDefault(); t.classList.remove('drag-over');
-      if(dragSrcIdx===null||dragSrcIdx===i)return;
-      const rack=state.myRack;
-      const tmp=rack[dragSrcIdx];
-      rack.splice(dragSrcIdx,1);
-      rack.splice(i,0,tmp);
-      if(state.newTileIdx===dragSrcIdx) state.newTileIdx=i;
-      dragSrcIdx=null;
-      renderRack();
-    });
-    el.appendChild(t);
-  });
-}
-
-function toggleExchangeMode(){
-  if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}
-  state.exchangeMode=!state.exchangeMode;
-  state.selected=null;
-  document.getElementById('exchange-hint').style.display=state.exchangeMode?'block':'none';
-  document.getElementById('exchange-toggle').textContent=state.exchangeMode?'Annuler échange':'Échanger une lettre';
-  renderRack();
-}
-
-function exchangeTile(idx){
-  send({type:'exchange_tile',tileIndex:idx});
-  state.exchangeMode=false;
-  document.getElementById('exchange-hint').style.display='none';
-  document.getElementById('exchange-toggle').textContent='Échanger une lettre';
-}
-
-function placeOnBoard(r,c){
-  if(state.exchangeMode)return;
-  const key=r+'_'+c;
-  if(state.board[r][c]||state.placed[key])return;
-  if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}
-  if(state.selected===null){setStatus('Sélectionne d\'abord une lettre.','');return;}
-  let letter=state.myRack[state.selected];
-  if(letter==='?')letter=(prompt('Lettre pour le joker (A-Z):')||'A').toUpperCase().charAt(0);
-  state.placed[key]=letter;state.placed['rack_'+state.selected]=true;state.selected=null;
-  send({type:'place_tiles',placed:state.placed});renderBoard();renderRack();
-  setStatus('Lettre posée. Continue ou soumets le mot.','');
-}
-
-function recallTile(r,c){
-  const key=r+'_'+c;if(!state.placed[key])return;
-  const letter=state.placed[key];
-  for(let k in state.placed){if(k.startsWith('rack_')){const idx=parseInt(k.split('_')[1]);if(state.myRack[idx]===letter){delete state.placed['rack_'+idx];break;}}}
-  delete state.placed[key];send({type:'place_tiles',placed:state.placed});renderBoard();renderRack();
-}
-
-function recallTiles(){state.placed={};state.selected=null;send({type:'place_tiles',placed:{}});renderBoard();renderRack();}
-function submitWord(){if(!state.myTurn){setStatus('Ce n\'est pas ton tour.','err');return;}send({type:'submit_word'});}
-function validateWord(accepted){send({type:'validate_word',accepted});document.getElementById('pending-banner').innerHTML='';}
-function passTurn(){if(!state.myTurn)return;send({type:'pass_turn'});}
-
-function addLog(line){
-  if(!line)return;
-  const el=document.getElementById('log-area'),d=document.createElement('div');
-  d.className='log-line';d.textContent=line;el.insertBefore(d,el.firstChild);
-}
-function setStatus(text,type){
-  const el=document.getElementById('status-msg');el.textContent=text;
-  el.style.background=type==='ok'?'#EAF3DE':type==='err'?'#FCEBEB':type==='info'?'#E6F1FB':'#f5f4f0';
-  el.style.color=type==='ok'?'#3B6D11':type==='err'?'#A32D2D':type==='info'?'#185FA5':'#555';
-  el.style.border=type==='ok'?'1px solid #97C459':type==='err'?'1px solid #F09595':type==='info'?'1px solid #85B7EB':'none';
-}
-function showLobbyMsg(html,type){const el=document.getElementById('lobby-msg');el.className='msg-box msg-'+type;el.innerHTML=html;}
-function showGameOver(scores){
-  const sorted=[...scores].sort((a,b)=>b.score-a.score),winner=sorted[0];
-  const div=document.createElement('div');div.className='game-over-overlay';
-  div.innerHTML=`<div class="game-over-card"><h2>🏆 Fin de partie !</h2><p style="color:#555;margin-bottom:1rem">${winner.name} gagne avec ${winner.score} points !</p>${sorted.map(p=>`<div class="score-row"><span>${p.name}</span><strong>${p.score} pts</strong></div>`).join('')}<button class="btn btn-primary" style="margin-top:1.5rem" onclick="location.reload()">Nouvelle partie</button></div>`;
-  document.body.appendChild(div);
-}
-window.addEventListener('resize',()=>{if(document.getElementById('game').style.display==='flex')renderBoard();});
-</script>
 </body>
 </html>
