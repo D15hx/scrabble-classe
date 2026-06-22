@@ -16,13 +16,14 @@ function broadcast(room, data) {
 }
 function sendTo(ws, data) { if (ws.readyState === 1) ws.send(JSON.stringify(data)); }
 
+// ─── SCRABBLE ───────────────────────────────────────────────────────────────
+
 const LETTER_DATA = {
   A:{v:1,n:9},B:{v:3,n:2},C:{v:2,n:2},D:{v:2,n:3},E:{v:1,n:15},F:{v:4,n:2},G:{v:2,n:2},
   H:{v:4,n:2},I:{v:1,n:8},J:{v:8,n:1},K:{v:10,n:1},L:{v:1,n:5},M:{v:2,n:3},N:{v:1,n:6},
   O:{v:1,n:6},P:{v:3,n:2},Q:{v:8,n:1},R:{v:1,n:6},S:{v:1,n:6},T:{v:1,n:6},U:{v:1,n:6},
   V:{v:4,n:2},W:{v:10,n:1},X:{v:10,n:1},Y:{v:10,n:1},Z:{v:10,n:1},'?':{v:0,n:2}
 };
-
 const BONUS_MAP = {};
 [[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='TW');
 [[1,1],[2,2],[3,3],[4,4],[10,10],[11,11],[12,12],[13,13],[1,13],[2,12],[3,11],[4,10],[10,4],[11,3],[12,2],[13,1]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='DW');
@@ -36,26 +37,20 @@ function makeBag() {
   return bag;
 }
 function drawTiles(rack, bag) { while (rack.length < 7 && bag.length > 0) rack.push(bag.pop()); }
-
-function createGame(playerNames) {
+function createScrabbleGame(playerNames) {
   const bag = makeBag();
   const players = playerNames.map(name => { const rack=[]; drawTiles(rack,bag); return {name,score:0,rack}; });
-  return { players, bag, board:Array.from({length:15},()=>Array(15).fill(null)), current:0, placed:{}, firstMove:true, pass:0, pendingWord:null, log:[] };
+  return { type:'scrabble', players, bag, board:Array.from({length:15},()=>Array(15).fill(null)), current:0, placed:{}, firstMove:true, pass:0, pendingWord:null, log:[] };
 }
-
 function scoreWord(placed, cells) {
   let score=0, wordMult=1;
   cells.forEach(({r,c,l})=>{
     const key=r+'_'+c, pts=l==='?'?0:(LETTER_DATA[l]?.v||0), b=BONUS_MAP[key], isNew=!!placed[key];
-    if(isNew&&b==='TL') score+=pts*3;
-    else if(isNew&&b==='DL') score+=pts*2;
-    else score+=pts;
-    if(isNew&&b==='TW') wordMult*=3;
-    else if(isNew&&b==='DW') wordMult*=2;
+    if(isNew&&b==='TL') score+=pts*3; else if(isNew&&b==='DL') score+=pts*2; else score+=pts;
+    if(isNew&&b==='TW') wordMult*=3; else if(isNew&&b==='DW') wordMult*=2;
   });
   return score*wordMult;
 }
-
 function extendWord(board, placed, r, c, horiz) {
   let cells=[];
   if(horiz){
@@ -69,10 +64,9 @@ function extendWord(board, placed, r, c, horiz) {
   }
   return cells;
 }
-
 function calcTotalScore(board, placed, newCells, isHoriz) {
   let total=0; const words=[];
-  const mainWord = extendWord(board, placed, newCells[0].r, newCells[0].c, isHoriz);
+  const mainWord=extendWord(board,placed,newCells[0].r,newCells[0].c,isHoriz);
   if(mainWord.length>=1){const s=scoreWord(placed,mainWord);total+=s;words.push({word:mainWord.map(c=>c.l).join(''),score:s});}
   newCells.forEach(({r,c})=>{
     const cross=extendWord(board,placed,r,c,!isHoriz);
@@ -82,20 +76,54 @@ function calcTotalScore(board, placed, newCells, isHoriz) {
   return {total,words};
 }
 
-wss.on('connection', (ws)=>{
-  ws.roomCode=null; ws.playerIndex=null;
+// ─── IMPOSTEUR ──────────────────────────────────────────────────────────────
 
-  ws.on('message', (raw)=>{
-    let msg; try{msg=JSON.parse(raw);}catch{return;}
+const WORD_PAIRS = [
+  ['plage','piscine'],['chien','chat'],['pizza','burger'],['voiture','moto'],
+  ['mer','lac'],['avion','train'],['pomme','poire'],['soleil','lune'],
+  ['football','basketball'],['café','thé'],['livre','magazine'],['école','université'],
+  ['printemps','automne'],['montagne','colline'],['guitare','violon'],['médecin','infirmier'],
+  ['boulangerie','pâtisserie'],['cinéma','théâtre'],['forêt','jungle'],['château','manoir'],
+  ['roi','président'],['piano','orgue'],['requin','dauphin'],['tigre','lion'],
+  ['Paris','Londres'],['neige','grêle'],['désert','savane'],['arc-en-ciel','aurore boréale'],
+  ['spaghetti','macaroni'],['chocolat','caramel']
+];
 
-    if(msg.type==='create_room'){
-      const code=Math.random().toString(36).slice(2,7).toUpperCase();
-      rooms[code]={players:[ws],playerNames:[msg.name],isProf:[msg.isProf||false],game:null,maxPlayers:msg.maxPlayers||2};
+function createImposteurGame(playerNames, mode, variant, wordA, wordB) {
+  let realWord, imposteurWord;
+  if (mode === 'auto') {
+    const pair = WORD_PAIRS[Math.floor(Math.random()*WORD_PAIRS.length)];
+    [realWord, imposteurWord] = Math.random()<0.5 ? pair : [pair[1],pair[0]];
+  } else {
+    realWord = wordA; imposteurWord = wordB;
+  }
+  const imposteurIdx = Math.floor(Math.random()*playerNames.length);
+  const players = playerNames.map((name,i) => ({
+    name,
+    word: i===imposteurIdx ? (variant==='mystery' ? '???' : imposteurWord) : realWord,
+    isImposteur: i===imposteurIdx,
+    hints: [],
+    vote: null
+  }));
+  return { type:'imposteur', mode, variant, realWord, imposteurWord, imposteurIdx, players, phase:'hints', current:0, round:1, maxRounds:3, log:[] };
+}
+
+// ─── WEBSOCKET ──────────────────────────────────────────────────────────────
+
+wss.on('connection', (ws) => {
+  ws.roomCode = null; ws.playerIndex = null;
+
+  ws.on('message', (raw) => {
+    let msg; try { msg = JSON.parse(raw); } catch { return; }
+
+    if (msg.type === 'create_room') {
+      const code = Math.random().toString(36).slice(2,7).toUpperCase();
+      rooms[code] = { players:[ws], playerNames:[msg.name], isProf:[msg.isProf||false], game:null, maxPlayers:msg.maxPlayers||2, gameType:msg.gameType||'scrabble' };
       ws.roomCode=code; ws.playerIndex=0;
       sendTo(ws,{type:'room_created',code,playerIndex:0});
     }
 
-    else if(msg.type==='join_room'){
+    else if (msg.type === 'join_room') {
       const room=rooms[msg.code];
       if(!room){sendTo(ws,{type:'error',message:'Salle introuvable.'});return;}
       if(room.game){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
@@ -104,26 +132,76 @@ wss.on('connection', (ws)=>{
       room.players.push(ws);room.playerNames.push(msg.name);room.isProf.push(msg.isProf||false);
       ws.roomCode=msg.code;ws.playerIndex=idx;
       sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx});
-      broadcast(room,{type:'player_joined',players:room.playerNames,count:room.players.length,max:room.maxPlayers});
-      if(room.players.length===room.maxPlayers){
-        room.game=createGame(room.playerNames);
-        broadcast(room,{type:'game_start',game:sanitizeGame(room.game),playerNames:room.playerNames});
-        room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
+      broadcast(room,{type:'player_joined',players:room.playerNames,count:room.players.length,max:room.maxPlayers,code:msg.code});
+    }
+
+    else if (msg.type === 'start_imposteur') {
+      const room=rooms[ws.roomCode]; if(!room) return;
+      if(room.players.length<3){sendTo(ws,{type:'error',message:'Il faut au moins 3 joueurs.'});return;}
+      room.game = createImposteurGame(room.playerNames, msg.mode, msg.variant, msg.wordA, msg.wordB);
+      broadcast(room,{type:'imposteur_start',playerNames:room.playerNames,playerCount:room.players.length});
+      room.players.forEach((p,i)=>sendTo(p,{type:'your_word',word:room.game.players[i].word}));
+      broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:1,maxRounds:3});
+    }
+
+    else if (msg.type === 'submit_hint') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.type!=='imposteur'||game.phase!=='hints') return;
+      if(game.current!==ws.playerIndex) return;
+      const hint=(msg.hint||'').trim().slice(0,50);
+      if(!hint){sendTo(ws,{type:'error',message:'Indice vide.'});return;}
+      game.players[ws.playerIndex].hints.push(hint);
+      game.log.push(`${room.playerNames[ws.playerIndex]}: "${hint}"`);
+      broadcast(room,{type:'hint_added',playerIndex:ws.playerIndex,playerName:room.playerNames[ws.playerIndex],hint,hints:game.players.map(p=>p.hints),log:game.log});
+      const allGaveHint=game.players.every(p=>p.hints.length>=game.round);
+      if(allGaveHint){
+        if(game.round>=game.maxRounds){
+          game.phase='vote';
+          broadcast(room,{type:'imposteur_phase',phase:'vote',playerNames:room.playerNames});
+        } else {
+          game.round++;game.current=0;
+          broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:game.round,maxRounds:game.maxRounds});
+        }
+      } else {
+        game.current=(game.current+1)%game.players.length;
+        broadcast(room,{type:'imposteur_phase',phase:'hints',current:game.current,currentName:room.playerNames[game.current],round:game.round,maxRounds:game.maxRounds});
       }
     }
 
-    else if(msg.type==='place_tiles'){
-      const room=rooms[ws.roomCode];if(!room||!room.game)return;
-      if(room.game.current!==ws.playerIndex)return;
+    else if (msg.type === 'submit_vote') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.type!=='imposteur'||game.phase!=='vote') return;
+      game.players[ws.playerIndex].vote=msg.votedIndex;
+      broadcast(room,{type:'vote_update',votes:game.players.map(p=>p.vote),playerNames:room.playerNames});
+      const allVoted=game.players.every(p=>p.vote!==null);
+      if(allVoted){
+        const tally=Array(game.players.length).fill(0);
+        game.players.forEach(p=>{if(p.vote!==null)tally[p.vote]++;});
+        const maxVotes=Math.max(...tally);
+        const suspected=tally.indexOf(maxVotes);
+        game.phase='reveal';
+        broadcast(room,{type:'imposteur_reveal',imposteurIdx:game.imposteurIdx,imposteurName:room.playerNames[game.imposteurIdx],realWord:game.realWord,imposteurWord:game.variant==='mystery'?'???':game.imposteurWord,variant:game.variant,suspected,suspectedName:room.playerNames[suspected],tally,playerNames:room.playerNames,votes:game.players.map(p=>p.vote)});
+      }
+    }
+
+    else if (msg.type === 'start_scrabble') {
+      const room=rooms[ws.roomCode]; if(!room) return;
+      room.game=createScrabbleGame(room.playerNames);
+      broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
+      room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
+    }
+
+    else if (msg.type === 'place_tiles') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      if(room.game.current!==ws.playerIndex) return;
       room.game.placed=msg.placed;
       broadcast(room,{type:'tiles_placed',placed:msg.placed,playerIndex:ws.playerIndex});
     }
 
-    else if(msg.type==='submit_word'){
-      const room=rooms[ws.roomCode];if(!room||!room.game)return;
-      const game=room.game;if(game.current!==ws.playerIndex)return;
-      const newCells=Object.keys(game.placed).filter(k=>!k.startsWith('rack_'))
-        .map(k=>{const[r,c]=k.split('_').map(Number);return{r,c,l:game.placed[k]};});
+    else if (msg.type === 'submit_word') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
+      const newCells=Object.keys(game.placed).filter(k=>!k.startsWith('rack_')).map(k=>{const[r,c]=k.split('_').map(Number);return{r,c,l:game.placed[k]};});
       if(newCells.length===0){sendTo(ws,{type:'error',message:'Aucune lettre placée.'});return;}
       const rows=newCells.map(c=>c.r),cols=newCells.map(c=>c.c);
       const minR=Math.min(...rows),maxR=Math.max(...rows),minC=Math.min(...cols),maxC=Math.max(...cols);
@@ -143,9 +221,9 @@ wss.on('connection', (ws)=>{
       broadcast(room,{type:'word_pending',word:mainWord,allWords,words,score:total,playerName:room.playerNames[ws.playerIndex],playerIndex:ws.playerIndex,placed:game.placed});
     }
 
-    else if(msg.type==='validate_word'){
-      const room=rooms[ws.roomCode];if(!room||!room.game||!room.game.pendingWord)return;
-      const game=room.game;const pw=game.pendingWord;
+    else if (msg.type === 'validate_word') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game||!room.game.pendingWord) return;
+      const game=room.game; const pw=game.pendingWord;
       if(msg.accepted){
         pw.cells.forEach(({r,c,l})=>{game.board[r][c]={l};});
         const usedIdxs=Object.keys(game.placed).filter(k=>k.startsWith('rack_')).map(k=>parseInt(k.split('_')[1]));
@@ -153,9 +231,7 @@ wss.on('connection', (ws)=>{
         drawTiles(game.players[pw.playerIndex].rack,game.bag);
         game.players[pw.playerIndex].score+=pw.total;
         game.placed={};game.firstMove=false;game.pass=0;game.pendingWord=null;
-        const logEntry=pw.words.length>1
-          ?`✓ ${pw.words.map(w=>`"${w.word}"+${w.score}`).join(' | ')} = +${pw.total} pts (${room.playerNames[pw.playerIndex]})`
-          :`✓ "${pw.word}" +${pw.total} pts (${room.playerNames[pw.playerIndex]})`;
+        const logEntry=pw.words.length>1?`✓ ${pw.words.map(w=>`"${w.word}"+${w.score}`).join(' | ')} = +${pw.total} pts (${room.playerNames[pw.playerIndex]})`:` ✓ "${pw.word}" +${pw.total} pts (${room.playerNames[pw.playerIndex]})`;
         game.log.push(logEntry);
         broadcast(room,{type:'word_accepted',word:pw.allWords,score:pw.total,playerIndex:pw.playerIndex,board:game.board,scores:game.players.map(p=>p.score),bagCount:game.bag.length,log:game.log});
         sendTo(room.players[pw.playerIndex],{type:'your_rack',rack:game.players[pw.playerIndex].rack});
@@ -169,28 +245,27 @@ wss.on('connection', (ws)=>{
       }
     }
 
-    else if(msg.type==='pass_turn'){
-      const room=rooms[ws.roomCode];if(!room||!room.game)return;
-      const game=room.game;if(game.current!==ws.playerIndex)return;
+    else if (msg.type === 'pass_turn') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
       game.placed={};game.pass++;
       game.log.push(`⏭ ${room.playerNames[ws.playerIndex]} passe`);
       if(game.pass>=game.players.length*2){broadcast(room,{type:'game_over',scores:game.players.map(p=>({name:p.name,score:p.score}))});return;}
       game.current=(game.current+1)%game.players.length;
-      broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,passed:room.playerNames[ws.playerIndex],log:game.log});
+      broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
     }
 
-    else if(msg.type==='exchange_tile'){
-      const room=rooms[ws.roomCode];if(!room||!room.game)return;
-      const game=room.game;if(game.current!==ws.playerIndex)return;
-      if(game.bag.length===0){sendTo(ws,{type:'error',message:'Plus de lettres dans le sac pour échanger.'});return;}
+    else if (msg.type === 'exchange_tile') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
+      if(game.bag.length===0){sendTo(ws,{type:'error',message:'Plus de lettres.'});return;}
       const player=game.players[ws.playerIndex];
       const idx=msg.tileIndex;
-      if(idx===undefined||idx<0||idx>=player.rack.length){sendTo(ws,{type:'error',message:'Lettre invalide.'});return;}
-      const oldLetter=player.rack[idx];
-      game.bag.unshift(oldLetter);
+      if(idx===undefined||idx<0||idx>=player.rack.length) return;
+      const old=player.rack[idx];
+      game.bag.unshift(old);
       for(let i=game.bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[game.bag[i],game.bag[j]]=[game.bag[j],game.bag[i]];}
-      const newLetter=game.bag.pop();
-      player.rack[idx]=newLetter;
+      player.rack[idx]=game.bag.pop();
       game.placed={};game.pass=0;
       game.log.push(`🔄 ${room.playerNames[ws.playerIndex]} a échangé une lettre`);
       sendTo(ws,{type:'your_rack',rack:player.rack,exchangedIdx:idx});
@@ -198,18 +273,18 @@ wss.on('connection', (ws)=>{
       broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
     }
 
-    else if(msg.type==='ping'){sendTo(ws,{type:'pong'});}
+    else if (msg.type === 'ping') { sendTo(ws,{type:'pong'}); }
   });
 
-  ws.on('close',()=>{
+  ws.on('close', ()=>{
     const room=rooms[ws.roomCode];
     if(room) broadcast(room,{type:'player_left',name:room.playerNames[ws.playerIndex]});
   });
 });
 
-function sanitizeGame(game){
-  return{board:game.board,scores:game.players.map(p=>p.score),playerNames:game.players.map(p=>p.name),current:game.current,bagCount:game.bag.length,firstMove:game.firstMove,log:game.log};
+function sanitizeScrabble(game) {
+  return {board:game.board,scores:game.players.map(p=>p.score),playerNames:game.players.map(p=>p.name),current:game.current,bagCount:game.bag.length,firstMove:game.firstMove,log:game.log};
 }
 
-const PORT=process.env.PORT||3000;
-server.listen(PORT,()=>console.log(`Scrabble server running on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, ()=>console.log(`Serveur jeux de classe — port ${PORT}`));
