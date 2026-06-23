@@ -36,10 +36,6 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
 .mode-card .emoji{font-size:28px;margin-bottom:6px}
 .mode-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
 .mode-card p{font-size:11px;color:#888;line-height:1.3}
-.word-reveal{background:#0f0f23;border:2px solid #7c4dff;border-radius:16px;padding:2rem;text-align:center;margin:1rem 0}
-.word-reveal .label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.word-reveal .word{font-size:42px;font-weight:800;color:#7c4dff}
-.word-reveal .mystery{font-size:42px;font-weight:800;color:#ff6d00}
 .hints-area{display:flex;flex-direction:column;gap:8px;margin:1rem 0;max-height:300px;overflow-y:auto}
 .hint-bubble{background:#0f0f23;border-radius:10px;padding:10px 14px}
 .hint-bubble .hint-name{font-size:11px;color:#7c4dff;font-weight:600;margin-bottom:3px}
@@ -68,15 +64,18 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
 .players-waiting{display:flex;flex-wrap:wrap;gap:8px;margin:1rem 0}
 .player-chip{background:#0f0f23;border:1px solid #2d2d5e;border-radius:20px;padding:5px 14px;font-size:13px}
 .player-row{background:#0f0f23;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;font-size:14px;margin-bottom:6px}
-.player-row .name{font-weight:500}
 .back-link{font-size:13px;color:#666;text-decoration:none;margin-top:1rem;display:block;text-align:center}
 .back-link:hover{color:#aaa}
 .section-title{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
 .msg-err{background:#3d0000;color:#ff6b6b;border:1px solid #d50000;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+.big-word{font-size:58px;font-weight:800;text-align:center;margin:0.5rem 0 1.5rem;letter-spacing:2px}
+.word-label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:0.5rem}
+.word-hint-box{background:#0f0f23;border-radius:12px;padding:1rem;text-align:center;color:#aaa;font-size:13px;line-height:1.6}
 </style>
 </head>
 <body>
 
+<!-- ÉCRAN 1 : CHOIX DU MODE -->
 <div class="screen active" id="screen-mode">
   <div class="card">
     <h1>🕵️ L'Imposteur</h1>
@@ -113,6 +112,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   </div>
 </div>
 
+<!-- ÉCRAN 2 : LOBBY -->
 <div class="screen" id="screen-lobby">
   <div class="card">
     <h1>🕵️ L'Imposteur</h1>
@@ -139,6 +139,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   </div>
 </div>
 
+<!-- ÉCRAN 3 : ATTENTE -->
 <div class="screen" id="screen-wait">
   <div class="card">
     <h1>🕵️ L'Imposteur</h1>
@@ -153,19 +154,20 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   </div>
 </div>
 
+<!-- ÉCRAN 4 : MON MOT -->
 <div class="screen" id="screen-word">
   <div class="card">
-    <h1>Ton mot secret</h1>
-    <p class="sub">Ne le montre à personne !</p>
-    <div class="word-reveal">
-      <div class="label">Ton mot est</div>
-      <div id="my-word" class="word"></div>
+    <div class="word-label">Ton mot secret</div>
+    <div id="my-word" class="big-word"></div>
+    <div class="word-hint-box">
+      🤫 Ne le montre à personne !<br>
+      Donne des indices sans dire le mot directement.
     </div>
-    <p style="font-size:13px;color:#888;text-align:center;margin:1rem 0">Donne des indices pour convaincre les autres que tu connais le mot commun — sans le dire directement !</p>
-    <button class="btn btn-purple" onclick="show('screen-hints')">J'ai mémorisé mon mot ✓</button>
+    <button class="btn btn-purple" onclick="show('screen-hints')" style="margin-top:1.5rem">J'ai mémorisé mon mot ✓</button>
   </div>
 </div>
 
+<!-- ÉCRAN 5 : INDICES -->
 <div class="screen" id="screen-hints">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
@@ -182,6 +184,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   </div>
 </div>
 
+<!-- ÉCRAN 6 : VOTE -->
 <div class="screen" id="screen-vote">
   <div class="card">
     <h1>🗳️ Vote !</h1>
@@ -191,6 +194,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   </div>
 </div>
 
+<!-- ÉCRAN 7 : RÉVÉLATION -->
 <div class="screen" id="screen-reveal">
   <div class="card">
     <h1>🎭 Révélation !</h1>
@@ -309,8 +313,8 @@ function handleMsg(msg){
   else if(msg.type==='your_word'){
     state.myWord=msg.word;
     const el=document.getElementById('my-word');
-    if(msg.word==='???'){el.className='mystery';el.textContent='???';}
-    else{el.className='word';el.textContent=msg.word;}
+    el.textContent=msg.word;
+    el.style.color=msg.word==='???'?'#ff6d00':'#7c4dff';
     show('screen-word');
   }
   else if(msg.type==='imposteur_phase'){
