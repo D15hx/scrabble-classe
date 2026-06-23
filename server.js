@@ -133,6 +133,13 @@ wss.on('connection', (ws) => {
       ws.roomCode=msg.code;ws.playerIndex=idx;
       sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx});
       broadcast(room,{type:'player_joined',players:room.playerNames,count:room.players.length,max:room.maxPlayers,code:msg.code});
+
+      // Démarrage automatique uniquement pour le Scrabble
+      if(room.players.length===room.maxPlayers && room.gameType==='scrabble'){
+        room.game=createScrabbleGame(room.playerNames);
+        broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
+        room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
+      }
     }
 
     else if (msg.type === 'start_imposteur') {
@@ -182,13 +189,6 @@ wss.on('connection', (ws) => {
         game.phase='reveal';
         broadcast(room,{type:'imposteur_reveal',imposteurIdx:game.imposteurIdx,imposteurName:room.playerNames[game.imposteurIdx],realWord:game.realWord,imposteurWord:game.variant==='mystery'?'???':game.imposteurWord,variant:game.variant,suspected,suspectedName:room.playerNames[suspected],tally,playerNames:room.playerNames,votes:game.players.map(p=>p.vote)});
       }
-    }
-
-    else if (msg.type === 'start_scrabble') {
-      const room=rooms[ws.roomCode]; if(!room) return;
-      room.game=createScrabbleGame(room.playerNames);
-      broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
-      room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
     }
 
     else if (msg.type === 'place_tiles') {
