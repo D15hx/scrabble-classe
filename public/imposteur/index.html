@@ -36,7 +36,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
 .mode-card .emoji{font-size:28px;margin-bottom:6px}
 .mode-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
 .mode-card p{font-size:11px;color:#888;line-height:1.3}
-.hints-area{display:flex;flex-direction:column;gap:8px;margin:1rem 0;max-height:300px;overflow-y:auto}
+.hints-area{display:flex;flex-direction:column;gap:8px;margin:1rem 0;max-height:240px;overflow-y:auto}
 .hint-bubble{background:#0f0f23;border-radius:10px;padding:10px 14px}
 .hint-bubble .hint-name{font-size:11px;color:#7c4dff;font-weight:600;margin-bottom:3px}
 .hint-bubble .hint-dots{display:flex;gap:6px;margin-top:4px}
@@ -54,7 +54,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
 .reveal-card .reveal-word{font-size:18px;color:#7c4dff;margin-top:4px}
 .result-win{color:#00c853;font-size:18px;font-weight:700;text-align:center;margin:1rem 0}
 .result-lose{color:#ff6d00;font-size:18px;font-weight:700;text-align:center;margin:1rem 0}
-.round-badge{background:#7c4dff;color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;display:inline-block;margin-bottom:1rem}
+.round-badge{background:#7c4dff;color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;display:inline-block}
 .status-bar{background:#0f0f23;border-radius:10px;padding:10px 14px;font-size:13px;color:#aaa;text-align:center;margin-bottom:1rem}
 .status-bar.my-turn{color:#7c4dff;font-weight:600;background:#1a0a3e;border:1px solid #7c4dff}
 .hint-input-area{display:flex;gap:8px;margin-top:1rem}
@@ -71,6 +71,9 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
 .big-word{font-size:58px;font-weight:800;text-align:center;margin:0.5rem 0 1.5rem;letter-spacing:2px}
 .word-label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:0.5rem}
 .word-hint-box{background:#0f0f23;border-radius:12px;padding:1rem;text-align:center;color:#aaa;font-size:13px;line-height:1.6}
+.my-word-banner{text-align:center;margin-bottom:1rem;background:#0f0f23;border-radius:10px;padding:10px}
+.my-word-banner .label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.my-word-banner .word{font-size:30px;font-weight:800;color:#7c4dff}
 </style>
 </head>
 <body>
@@ -172,7 +175,10 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <span class="round-badge" id="round-badge">Tour 1/3</span>
-      <span style="font-size:12px;color:#666" id="my-word-reminder"></span>
+    </div>
+    <div class="my-word-banner">
+      <div class="label">Ton mot</div>
+      <div class="word" id="my-word-reminder"></div>
     </div>
     <div class="status-bar" id="hint-status">En attente...</div>
     <div class="section-title">Indices donnés</div>
@@ -321,7 +327,9 @@ function handleMsg(msg){
     if(msg.phase==='hints'){
       state.maxRounds=msg.maxRounds;
       document.getElementById('round-badge').textContent=`Tour ${msg.round}/${msg.maxRounds}`;
-      document.getElementById('my-word-reminder').textContent=`Ton mot : ${state.myWord}`;
+      const reminder=document.getElementById('my-word-reminder');
+      reminder.textContent=state.myWord;
+      reminder.style.color=state.myWord==='???'?'#ff6d00':'#7c4dff';
       const isMyTurn=msg.current===state.myIndex;
       const statusEl=document.getElementById('hint-status');
       statusEl.textContent=isMyTurn?'C\'est ton tour de donner un indice !':`En attente de ${msg.currentName}...`;
