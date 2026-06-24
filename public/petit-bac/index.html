@@ -1,1 +1,516 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petit Bac</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f4ff;color:#222;min-height:100vh}
+.screen{display:none;min-height:100vh;padding:1.5rem 1rem;align-items:center;justify-content:center;flex-direction:column}
+.screen.active{display:flex}
+.card{background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:540px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
+.sub{color:#888;font-size:14px;text-align:center;margin-bottom:1.5rem}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;color:#555;margin-bottom:5px;font-weight:500}
+.field input,.field select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff;color:#222}
+.field input:focus,.field select:focus{outline:none;border-color:#4F6EF7}
+.btn{padding:11px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s;width:100%}
+.btn-blue{background:#4F6EF7;color:#fff}
+.btn-blue:hover{background:#3a57e8}
+.btn-green{background:#22c55e;color:#fff}
+.btn-green:hover{background:#16a34a}
+.btn-ghost{background:transparent;color:#888;border:1px solid #ddd}
+.btn-ghost:hover{background:#f5f5f5}
+.btn-orange{background:#f97316;color:#fff}
+.btn-orange:hover{background:#ea580c}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto;border-radius:8px}
+.divider{text-align:center;color:#ccc;font-size:13px;margin:1rem 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:#eee}
+.divider::before{left:0}.divider::after{right:0}
+.code-box{background:#f0f4ff;border:2px solid #4F6EF7;border-radius:12px;padding:1.2rem;text-align:center;margin:1rem 0}
+.code-big{font-size:36px;font-weight:800;color:#4F6EF7;letter-spacing:8px}
+.code-hint{font-size:12px;color:#888;margin-top:4px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.mode-card{background:#f8f9ff;border:2px solid #e0e7ff;border-radius:12px;padding:1.2rem;cursor:pointer;text-align:center;transition:all .2s}
+.mode-card:hover,.mode-card.selected{border-color:#4F6EF7;background:#eef2ff}
+.mode-card .emoji{font-size:28px;margin-bottom:6px}
+.mode-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.mode-card p{font-size:11px;color:#888;line-height:1.3}
+.players-waiting{display:flex;flex-wrap:wrap;gap:8px;margin:1rem 0}
+.player-chip{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:500}
+.back-link{font-size:13px;color:#aaa;text-decoration:none;margin-top:1rem;display:block;text-align:center}
+.back-link:hover{color:#666}
+.section-title{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.msg-err{background:#fef2f2;color:#ef4444;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
+.cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;max-height:200px;overflow-y:auto}
+.cat-item{display:flex;align-items:center;gap:8px;background:#f8f9ff;border:1px solid #e0e7ff;border-radius:8px;padding:6px 10px}
+.cat-item span{flex:1;font-size:14px}
+.cat-item button{background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;padding:0 4px}
+.cat-add-row{display:flex;gap:8px}
+.cat-add-row input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+.cat-add-row select{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff}
+.letter-display{font-size:96px;font-weight:900;color:#4F6EF7;text-align:center;margin:1rem 0;line-height:1}
+.letter-label{font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:0.5rem}
+.game-wrap{width:100%;max-width:1000px;padding:1rem}
+.game-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.letter-badge{font-size:32px;font-weight:900;color:#4F6EF7;background:#eef2ff;border:2px solid #4F6EF7;border-radius:12px;padding:4px 20px}
+.scores-bar{display:flex;gap:8px;flex-wrap:wrap}
+.score-chip{padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;border:2px solid}
+.answers-table{width:100%;border-collapse:collapse;margin-top:1rem}
+.answers-table th{background:#4F6EF7;color:#fff;padding:10px 12px;font-size:13px;font-weight:600;text-align:left}
+.answers-table td{padding:8px 12px;border-bottom:1px solid #f0f4ff;font-size:14px;vertical-align:middle}
+.my-input{width:100%;padding:6px 10px;border:1.5px solid #c7d2fe;border-radius:8px;font-size:14px;background:#fff;color:#222}
+.my-input:focus{outline:none;border-color:#4F6EF7}
+.my-input:disabled{background:#f5f5f5;color:#aaa}
+.other-answer{font-size:14px;font-weight:500;letter-spacing:1px;color:#888}
+.done-banner{background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:1rem;text-align:center;font-size:15px;font-weight:600;color:#92400e;margin-bottom:1rem}
+.finish-btn-wrap{text-align:center;margin-top:1rem}
+.validation-wrap{width:100%;max-width:1000px;padding:1rem;overflow-x:auto}
+.validation-table{width:100%;border-collapse:collapse;min-width:600px}
+.validation-table th{background:#4F6EF7;color:#fff;padding:10px 12px;font-size:13px;font-weight:600;text-align:left;white-space:nowrap}
+.validation-table td{padding:8px 12px;border-bottom:1px solid #f0f4ff;font-size:13px;vertical-align:middle}
+.pts-btn{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:700;margin:0 2px;transition:all .15s}
+.pts-2{background:#dcfce7;color:#16a34a;border:1px solid #86efac}
+.pts-2.active{background:#16a34a;color:#fff}
+.pts-1{background:#fef9c3;color:#ca8a04;border:1px solid #fde047}
+.pts-1.active{background:#ca8a04;color:#fff}
+.pts-0{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}
+.pts-0.active{background:#dc2626;color:#fff}
+.round-scores{display:flex;gap:10px;flex-wrap:wrap;margin:1rem 0}
+.round-score-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:2px solid}
+.podium{display:flex;flex-direction:column;gap:10px;margin:1rem 0}
+.podium-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:600}
+.podium-row.first{background:#fef9c3;border:2px solid #fde047}
+.podium-row.second{background:#f1f5f9;border:2px solid #cbd5e1}
+.podium-row.third{background:#fff7ed;border:2px solid #fed7aa}
+.podium-row.other{background:#f8f9ff;border:2px solid #e0e7ff}
+.wait-validation{background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:12px;text-align:center;font-size:13px;color:#4F6EF7;margin-top:1rem}
+</style>
+</head>
+<body>
 
+<!-- ÉCRAN 1 : CHOIX MODE -->
+<div class="screen active" id="screen-mode">
+  <div class="card">
+    <h1>🔡 Petit Bac</h1>
+    <p class="sub">Le jeu des catégories façon classe !</p>
+    <div class="section-title">Ton rôle</div>
+    <div class="mode-grid">
+      <div class="mode-card" id="mode-prof-joueur" onclick="selectMode('prof-joueur')">
+        <div class="emoji">🎮</div>
+        <h3>Prof joueur</h3>
+        <p>Tu joues ET tu valides les réponses</p>
+      </div>
+      <div class="mode-card" id="mode-prof-obs" onclick="selectMode('prof-obs')">
+        <div class="emoji">👁️</div>
+        <h3>Prof observateur</h3>
+        <p>Tu gères la partie et valides sans jouer</p>
+      </div>
+      <div class="mode-card" id="mode-etudiant" onclick="selectMode('etudiant')" style="grid-column:span 2">
+        <div class="emoji">🎓</div>
+        <h3>Étudiant(e)</h3>
+        <p>Tu rejoins une partie existante</p>
+      </div>
+    </div>
+    <div id="mode-err" class="msg-err" style="display:none"></div>
+    <button class="btn btn-blue" onclick="goToSetup()" style="margin-top:1rem">Continuer →</button>
+    <a href="/" class="back-link">← Retour aux jeux</a>
+  </div>
+</div>
+
+<!-- ÉCRAN 2 : CONFIG (PROF) -->
+<div class="screen" id="screen-setup">
+  <div class="card">
+    <h1>🔡 Petit Bac</h1>
+    <p class="sub" id="setup-sub">Configuration de la partie</p>
+    <div id="setup-err" class="msg-err" style="display:none"></div>
+    <div class="field"><label>Ton prénom</label><input id="setup-name" placeholder="Ex: Marie" maxlength="20"/></div>
+    <div class="field"><label>Score à atteindre pour gagner</label><input id="target-score" type="number" value="20" min="5" max="100"/></div>
+    <div class="field"><label>Nombre de joueurs max (hors prof observateur)</label>
+      <select id="max-players">
+        <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+        <option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option>
+      </select>
+    </div>
+    <div class="section-title" style="margin-top:1rem">Catégories</div>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="cat-add-row">
+      <select id="cat-select">
+        <option value="">-- Choisir --</option>
+        <option>Prénom</option><option>Ville/Pays</option><option>Animal</option>
+        <option>Métier</option><option>Fruit/Légume</option><option>Objet</option>
+        <option>Adjectif</option><option>Verbe</option><option>Marque</option>
+        <option>Sport</option><option>Couleur</option><option>Vêtement</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="addCatFromSelect()">+ Ajouter</button>
+    </div>
+    <div class="cat-add-row" style="margin-top:6px">
+      <input id="cat-custom" placeholder="Catégorie personnalisée..." maxlength="30"/>
+      <button class="btn btn-ghost btn-sm" onclick="addCatCustom()">+ Créer</button>
+    </div>
+    <button class="btn btn-blue" onclick="createRoom()" style="margin-top:1.5rem">Créer la partie</button>
+    <a href="/" class="back-link">← Retour aux jeux</a>
+  </div>
+</div>
+
+<!-- ÉCRAN 3 : REJOINDRE -->
+<div class="screen" id="screen-join">
+  <div class="card">
+    <h1>🔡 Petit Bac</h1>
+    <p class="sub">Rejoindre une partie</p>
+    <div id="join-err" class="msg-err" style="display:none"></div>
+    <div class="field"><label>Ton prénom</label><input id="join-name" placeholder="Ex: Thomas" maxlength="20"/></div>
+    <div class="field"><label>Code de la salle</label><input id="join-code" placeholder="Ex: ABC12" maxlength="5" style="text-transform:uppercase"/></div>
+    <button class="btn btn-blue" onclick="joinRoom()">Rejoindre</button>
+    <a href="/" class="back-link">← Retour aux jeux</a>
+  </div>
+</div>
+
+<!-- ÉCRAN 4 : ATTENTE -->
+<div class="screen" id="screen-wait">
+  <div class="card">
+    <h1>🔡 Petit Bac</h1>
+    <div class="code-box">
+      <div class="code-big" id="wait-code"></div>
+      <div class="code-hint">Code de la salle</div>
+    </div>
+    <div class="section-title">Joueurs connectés</div>
+    <div class="players-waiting" id="players-waiting"></div>
+    <p style="font-size:13px;color:#aaa;text-align:center;margin-top:1rem" id="wait-msg">En attente des joueurs...</p>
+    <button class="btn btn-green" id="btn-start" style="display:none;margin-top:1rem" onclick="startRound()">▶ Lancer la partie !</button>
+  </div>
+</div>
+
+<!-- ÉCRAN 5 : LETTRE -->
+<div class="screen" id="screen-letter">
+  <div class="card" style="text-align:center">
+    <div class="letter-label">La lettre de ce tour est</div>
+    <div class="letter-display" id="letter-big"></div>
+    <p style="font-size:13px;color:#aaa;margin-bottom:1.5rem">Prépare-toi !</p>
+    <div id="letter-prof-btns" style="display:none;flex-direction:column;gap:8px">
+      <button class="btn btn-orange" onclick="rerollLetter()">🎲 Relancer la lettre</button>
+      <button class="btn btn-green" onclick="startPlaying()">▶ C'est parti !</button>
+    </div>
+    <div id="letter-wait-msg" style="display:none;font-size:13px;color:#aaa">En attente du professeur...</div>
+  </div>
+</div>
+
+<!-- ÉCRAN 6 : JEU -->
+<div class="screen" id="screen-game">
+  <div class="game-wrap">
+    <div class="game-header">
+      <div class="letter-badge" id="game-letter"></div>
+      <div class="scores-bar" id="scores-bar"></div>
+    </div>
+    <div id="done-banner" class="done-banner" style="display:none"></div>
+    <div style="overflow-x:auto">
+      <table class="answers-table">
+        <thead id="answers-thead"></thead>
+        <tbody id="answers-tbody"></tbody>
+      </table>
+    </div>
+    <div class="finish-btn-wrap" id="finish-btn-wrap">
+      <button class="btn btn-green" style="max-width:300px" onclick="finishAnswers()">✓ J'ai fini !</button>
+    </div>
+    <div class="wait-validation" id="wait-validation" style="display:none">⏳ En attente de la validation du professeur...</div>
+  </div>
+</div>
+
+<!-- ÉCRAN 7 : VALIDATION (PROF) -->
+<div class="screen" id="screen-validation">
+  <div class="validation-wrap">
+    <h1 style="text-align:center;margin-bottom:0.5rem">🔍 Validation</h1>
+    <p class="sub">Attribue les points pour chaque réponse</p>
+    <div class="round-scores" id="round-scores"></div>
+    <div style="overflow-x:auto">
+      <table class="validation-table">
+        <thead id="validation-thead"></thead>
+        <tbody id="validation-tbody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-blue" onclick="submitValidation()" style="margin-top:1.5rem;max-width:400px;margin-left:auto;margin-right:auto;display:block">Valider et continuer →</button>
+  </div>
+</div>
+
+<!-- ÉCRAN 8 : SCORES -->
+<div class="screen" id="screen-scores">
+  <div class="card">
+    <h1>📊 Scores</h1>
+    <p class="sub" id="scores-sub"></p>
+    <div class="podium" id="podium"></div>
+    <button class="btn btn-blue" id="btn-next-round" style="display:none;margin-top:1rem" onclick="startRound()">▶ Manche suivante</button>
+    <p id="scores-wait-msg" style="font-size:13px;color:#aaa;text-align:center;margin-top:1rem"></p>
+  </div>
+</div>
+
+<!-- ÉCRAN 9 : FIN -->
+<div class="screen" id="screen-end">
+  <div class="card">
+    <h1>🏆 Fin de partie !</h1>
+    <div class="podium" id="end-podium"></div>
+    <button class="btn btn-blue" onclick="location.href='/petit-bac/'" style="margin-top:1.5rem">Rejouer</button>
+    <a href="/" class="back-link">← Retour aux jeux</a>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#4F6EF7','#22c55e','#f97316','#a855f7','#ef4444','#14b8a6','#ec4899','#eab308','#06b6d4','#84cc16'];
+
+let ws, state = {
+  mode:null, myName:'', myIndex:-1, isProf:false, isProfPlayer:false,
+  roomCode:'', playerNames:[], categories:[], targetScore:20,
+  letter:'', scores:{}, myAnswers:{}, phase:'', done:false, pendingPoints:{}
+};
+
+let setupCats = ['Prénom','Ville/Pays','Animal','Métier','Fruit/Légume'];
+
+function renderCatList() {
+  document.getElementById('cat-list').innerHTML = setupCats.map((c,i) =>
+    `<div class="cat-item"><span>${c}</span><button onclick="removeCat(${i})">✕</button></div>`).join('');
+}
+function removeCat(i){ setupCats.splice(i,1); renderCatList(); }
+function addCatFromSelect(){
+  const sel=document.getElementById('cat-select'); const val=sel.value;
+  if(!val)return; if(!setupCats.includes(val))setupCats.push(val); sel.value=''; renderCatList();
+}
+function addCatCustom(){
+  const inp=document.getElementById('cat-custom'); const val=inp.value.trim();
+  if(!val)return; if(!setupCats.includes(val))setupCats.push(val); inp.value=''; renderCatList();
+}
+
+function selectMode(m){
+  state.mode=m;
+  document.querySelectorAll('.mode-card').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('mode-'+m).classList.add('selected');
+}
+function goToSetup(){
+  if(!state.mode){showErr('mode-err','Choisis un rôle.');return;}
+  if(state.mode==='etudiant'){show('screen-join');return;}
+  state.isProf=true; state.isProfPlayer=state.mode==='prof-joueur';
+  renderCatList(); show('screen-setup');
+}
+function showErr(id,msg){
+  const el=document.getElementById(id); el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function getWsUrl(){return(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host;}
+function connect(cb){
+  ws=new WebSocket(getWsUrl());
+  ws.onopen=cb;
+  ws.onmessage=e=>handleMsg(JSON.parse(e.data));
+  ws.onclose=()=>console.log('Connexion perdue');
+  setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},25000);
+}
+function send(data){if(ws&&ws.readyState===1)ws.send(JSON.stringify(data));}
+
+function createRoom(){
+  const name=document.getElementById('setup-name').value.trim();
+  if(!name){showErr('setup-err','Entre ton prénom.');return;}
+  if(setupCats.length<2){showErr('setup-err','Ajoute au moins 2 catégories.');return;}
+  const target=parseInt(document.getElementById('target-score').value)||20;
+  const max=parseInt(document.getElementById('max-players').value);
+  state.myName=name; state.targetScore=target; state.categories=[...setupCats];
+  const totalMax = state.isProfPlayer ? max : max+1;
+  connect(()=>send({type:'create_room',name,isProf:true,maxPlayers:totalMax,gameType:'petit-bac',categories:setupCats,targetScore:target,isProfPlayer:state.isProfPlayer}));
+}
+function joinRoom(){
+  const name=document.getElementById('join-name').value.trim();
+  const code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!name){showErr('join-err','Entre ton prénom.');return;}
+  if(!code){showErr('join-err','Entre le code.');return;}
+  state.myName=name; state.isProf=false;
+  connect(()=>send({type:'join_room',name,code,gameType:'petit-bac'}));
+}
+
+function handleMsg(msg){
+  if(msg.type==='room_created'){
+    state.myIndex=0; state.roomCode=msg.code;
+    document.getElementById('wait-code').textContent=msg.code;
+    document.getElementById('players-waiting').innerHTML=`<span class="player-chip" style="color:${COLORS[0]}">${state.myName} (toi)</span>`;
+    document.getElementById('btn-start').style.display='block';
+    show('screen-wait');
+  }
+  else if(msg.type==='room_joined'){
+    state.myIndex=msg.playerIndex;
+    show('screen-wait');
+  }
+  else if(msg.type==='player_joined'){
+    state.playerNames=msg.players;
+    document.getElementById('players-waiting').innerHTML=msg.players.map((n,i)=>
+      `<span class="player-chip" style="color:${COLORS[i]};border-color:${COLORS[i]}">${n}${i===state.myIndex?' (toi)':''}</span>`).join('');
+    if(msg.code)document.getElementById('wait-code').textContent=msg.code;
+    document.getElementById('wait-msg').textContent=`${msg.count}/${msg.max} joueurs connectés`;
+  }
+  else if(msg.type==='pb_config'){
+    state.categories=msg.categories; state.targetScore=msg.targetScore; state.playerNames=msg.playerNames;
+    msg.playerNames.forEach(n=>state.scores[n]=0);
+  }
+  else if(msg.type==='pb_letter'){
+    state.letter=msg.letter; state.done=false; state.myAnswers={};
+    document.getElementById('letter-big').textContent=msg.letter;
+    const profBtns=document.getElementById('letter-prof-btns');
+    const waitMsg=document.getElementById('letter-wait-msg');
+    if(state.isProf){profBtns.style.display='flex';waitMsg.style.display='none';}
+    else{profBtns.style.display='none';waitMsg.style.display='block';}
+    show('screen-letter');
+  }
+  else if(msg.type==='pb_start_playing'){
+    state.done=false; state.myAnswers={};
+    buildGameTable();
+    document.getElementById('game-letter').textContent=state.letter;
+    document.getElementById('done-banner').style.display='none';
+    document.getElementById('wait-validation').style.display='none';
+    const showFinish = !state.isProf || state.isProfPlayer;
+    document.getElementById('finish-btn-wrap').style.display=showFinish?'block':'none';
+    renderScoresBar();
+    show('screen-game');
+  }
+  else if(msg.type==='pb_answer_update'){
+    if(msg.playerName!==state.myName){
+      const idx=state.playerNames.indexOf(msg.playerName);
+      const cell=document.getElementById(`cell-${idx}-${btoa(msg.category).replace(/=/g,'')}`);
+      if(cell)cell.textContent=msg.masked||'—';
+    }
+  }
+  else if(msg.type==='pb_finished'){
+    state.done=true;
+    const banner=document.getElementById('done-banner');
+    banner.textContent=msg.finisher===state.myName?'✓ Tu as fini en premier !':`🏃 ${msg.finisher} a terminé avant toi !`;
+    banner.style.display='block';
+    document.getElementById('finish-btn-wrap').style.display='none';
+    document.querySelectorAll('.my-input').forEach(inp=>inp.disabled=true);
+    if(!state.isProf){document.getElementById('wait-validation').style.display='block';}
+  }
+  else if(msg.type==='pb_validate'){
+    state.playerNames=msg.playerNames; state.categories=msg.categories;
+    buildValidationTable(msg.answers);
+    show('screen-validation');
+  }
+  else if(msg.type==='pb_scores'){
+    msg.scores.forEach(({name,score})=>state.scores[name]=score);
+    buildScoresScreen(msg.scores,msg.roundPoints,msg.finished,msg.winner);
+  }
+  else if(msg.type==='pb_next_round'){
+    document.getElementById('wait-msg').textContent='Prêt pour la manche suivante !';
+    document.getElementById('btn-start').style.display=state.isProf?'block':'none';
+    show('screen-wait');
+  }
+  else if(msg.type==='error'){showErr('setup-err',msg.message);showErr('join-err',msg.message);}
+}
+
+function startRound(){ send({type:'pb_start_round'}); }
+function rerollLetter(){ send({type:'pb_reroll'}); }
+function startPlaying(){ send({type:'pb_go'}); }
+
+function buildGameTable(){
+  const thead=document.getElementById('answers-thead');
+  const tbody=document.getElementById('answers-tbody');
+  thead.innerHTML='<tr><th>Catégorie</th>'+state.playerNames.map((n,i)=>
+    `<th style="color:${COLORS[i]}">${n}${i===state.myIndex?' (toi)':''}</th>`).join('')+'</tr>';
+  tbody.innerHTML=state.categories.map(cat=>{
+    const key=btoa(cat).replace(/=/g,'');
+    const cells=state.playerNames.map((n,i)=>{
+      if(i===state.myIndex&&(!state.isProf||state.isProfPlayer)){
+        return `<td><input class="my-input" id="inp-${key}" placeholder="${state.letter}..." maxlength="30" oninput="onAnswerInput('${cat}',this.value)"/></td>`;
+      } else {
+        return `<td><span class="other-answer" id="cell-${i}-${key}" style="color:${COLORS[i]}">—</span></td>`;
+      }
+    }).join('');
+    return `<tr><td style="font-weight:600;color:#555;white-space:nowrap">${cat}</td>${cells}</tr>`;
+  }).join('');
+}
+
+function onAnswerInput(cat,val){
+  state.myAnswers[cat]=val;
+  const stars='*'.repeat(Math.floor(Math.random()*6)+3);
+  const masked=val.length>0?val[0]+stars:'';
+  send({type:'pb_answer',category:cat,answer:val,masked});
+}
+
+function renderScoresBar(){
+  document.getElementById('scores-bar').innerHTML=state.playerNames.map((n,i)=>
+    `<span class="score-chip" style="color:${COLORS[i]};border-color:${COLORS[i]};background:${COLORS[i]}18">${n}: ${state.scores[n]||0}/${state.targetScore}</span>`
+  ).join('');
+}
+
+function finishAnswers(){
+  if(state.done)return;
+  send({type:'pb_finish',answers:state.myAnswers});
+}
+
+function buildValidationTable(allAnswers){
+  const thead=document.getElementById('validation-thead');
+  const tbody=document.getElementById('validation-tbody');
+  state.pendingPoints={};
+  state.playerNames.forEach(n=>{state.pendingPoints[n]={};state.categories.forEach(c=>state.pendingPoints[n][c]=1);});
+
+  thead.innerHTML='<tr><th>Catégorie</th>'+state.playerNames.map((n,i)=>
+    `<th style="color:${COLORS[i]}">${n}</th>`).join('')+'</tr>';
+
+  tbody.innerHTML=state.categories.map(cat=>{
+    const cells=state.playerNames.map((n,i)=>{
+      const ans=(allAnswers[n]&&allAnswers[n][cat])||'';
+      const isEmpty=!ans;
+      return `<td>
+        <div style="font-weight:600;color:${COLORS[i]};margin-bottom:4px">${ans||'—'}</div>
+        ${!isEmpty?`<div>
+          <button class="pts-btn pts-2" id="v-${i}-${cat}-2" onclick="setPts('${n}','${cat}',2,${i})">2 pts</button>
+          <button class="pts-btn pts-1 active" id="v-${i}-${cat}-1" onclick="setPts('${n}','${cat}',1,${i})">1 pt</button>
+          <button class="pts-btn pts-0" id="v-${i}-${cat}-0" onclick="setPts('${n}','${cat}',0,${i})">0 pt</button>
+        </div>`:'<span style="font-size:12px;color:#ccc">pas de réponse</span>'}
+      </td>`;
+    }).join('');
+    return `<tr><td style="font-weight:700;color:#555;white-space:nowrap">${cat}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('round-scores').innerHTML='<div class="section-title" style="width:100%">Scores actuels</div>'+
+    state.playerNames.map((n,i)=>
+      `<span class="round-score-chip" style="color:${COLORS[i]};border-color:${COLORS[i]};background:${COLORS[i]}18">${n}: ${state.scores[n]||0} pts</span>`
+    ).join('');
+}
+
+function setPts(playerName,cat,pts,playerIdx){
+  state.pendingPoints[playerName][cat]=pts;
+  [0,1,2].forEach(p=>{
+    const btn=document.getElementById(`v-${playerIdx}-${cat}-${p}`);
+    if(btn)btn.classList.toggle('active',p===pts);
+  });
+}
+
+function submitValidation(){
+  send({type:'pb_submit_points',points:state.pendingPoints});
+}
+
+function buildScoresScreen(scores,roundPoints,finished,winner){
+  const sorted=[...scores].sort((a,b)=>b.score-a.score);
+  document.getElementById('scores-sub').textContent=finished?`🏆 ${winner} a gagné !`:`Objectif : ${state.targetScore} pts`;
+  const ranks=['first','second','third'];
+  const html=sorted.map((p,i)=>{
+    const idx=state.playerNames.indexOf(p.name);
+    const gained=roundPoints&&roundPoints[p.name]?`(+${roundPoints[p.name]})`:''
+    return `<div class="podium-row ${ranks[i]||'other'}">
+      <span style="color:${COLORS[idx]}">${['🥇','🥈','🥉'][i]||'  '} ${p.name}</span>
+      <span style="color:${COLORS[idx]}">${p.score} pts <span style="font-size:13px;font-weight:400">${gained}</span></span>
+    </div>`;
+  }).join('');
+  document.getElementById('podium').innerHTML=html;
+  if(finished){
+    document.getElementById('end-podium').innerHTML=html;
+    show('screen-end');
+  } else {
+    document.getElementById('btn-next-round').style.display=state.isProf?'block':'none';
+    document.getElementById('scores-wait-msg').textContent=state.isProf?'':'En attente du professeur...';
+    show('screen-scores');
+  }
+}
+
+renderCatList();
+</script>
+</body>
+</html>
