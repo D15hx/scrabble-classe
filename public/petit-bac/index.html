@@ -1,404 +1,377 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Petit Bac</title>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#f0f4ff;color:#222;min-height:100vh}
-.screen{display:none;min-height:100vh;padding:1.5rem 1rem;align-items:center;justify-content:center;flex-direction:column}
-.screen.active{display:flex}
-.card{background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:540px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
-h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
-.sub{color:#888;font-size:14px;text-align:center;margin-bottom:1.5rem}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:13px;color:#555;margin-bottom:5px;font-weight:500}
-.field input,.field select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff;color:#222}
-.field input:focus,.field select:focus{outline:none;border-color:#4F6EF7}
-.btn{padding:11px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s;width:100%}
-.btn-blue{background:#4F6EF7;color:#fff}.btn-blue:hover{background:#3a57e8}
-.btn-green{background:#22c55e;color:#fff}.btn-green:hover{background:#16a34a}
-.btn-ghost{background:transparent;color:#888;border:1px solid #ddd}.btn-ghost:hover{background:#f5f5f5}
-.btn-orange{background:#f97316;color:#fff}.btn-orange:hover{background:#ea580c}
-.btn-sm{padding:6px 12px;font-size:12px;width:auto;border-radius:8px}
-.code-box{background:#f0f4ff;border:2px solid #4F6EF7;border-radius:12px;padding:1.2rem;text-align:center;margin:1rem 0}
-.code-big{font-size:36px;font-weight:800;color:#4F6EF7;letter-spacing:8px}
-.code-hint{font-size:12px;color:#888;margin-top:4px}
-.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
-.mode-card{background:#f8f9ff;border:2px solid #e0e7ff;border-radius:12px;padding:1.2rem;cursor:pointer;text-align:center;transition:all .2s}
-.mode-card:hover,.mode-card.selected{border-color:#4F6EF7;background:#eef2ff}
-.mode-card .emoji{font-size:28px;margin-bottom:6px}
-.mode-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
-.mode-card p{font-size:11px;color:#888;line-height:1.3}
-.players-waiting{display:flex;flex-wrap:wrap;gap:8px;margin:1rem 0}
-.player-chip{border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;border:2px solid}
-.back-link{font-size:13px;color:#aaa;text-decoration:none;margin-top:1rem;display:block;text-align:center}
-.back-link:hover{color:#666}
-.section-title{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.msg-err{background:#fef2f2;color:#ef4444;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:10px}
-.cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;max-height:200px;overflow-y:auto}
-.cat-item{display:flex;align-items:center;gap:8px;background:#f8f9ff;border:1px solid #e0e7ff;border-radius:8px;padding:6px 10px}
-.cat-item span{flex:1;font-size:14px}
-.cat-item button{background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px}
-.cat-add-row{display:flex;gap:8px}
-.cat-add-row input{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px}
-.cat-add-row select{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff}
-.color-picker{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.color-dot{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
-.color-dot:hover{transform:scale(1.15)}
-.color-dot.selected{border-color:#222;transform:scale(1.2)}
-.color-dot.taken{opacity:0.25;cursor:not-allowed}
-.letter-display{font-size:96px;font-weight:900;text-align:center;margin:1rem 0;line-height:1;font-family:'Caveat',cursive}
-.letter-label{font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:0.5rem}
-#screen-game{padding:0;align-items:stretch;justify-content:flex-start;flex-direction:row;height:100vh;overflow:hidden;background:#d6cfc4}
-.whiteboard{flex:1;display:flex;flex-direction:column;overflow:hidden;margin:14px;border-radius:6px;background:#f7f5f0;box-shadow:0 4px 16px rgba(0,0,0,0.2),inset 0 0 80px rgba(0,0,0,0.015);border:4px solid #b8a88a;position:relative}
-.wb-header{display:flex;align-items:center;gap:12px;padding:10px 16px 8px;border-bottom:2px solid rgba(0,0,0,0.07);position:relative;z-index:1}
-.wb-letter{font-family:'Caveat',cursive;font-size:52px;font-weight:700;line-height:1;min-width:56px;text-align:center}
-.wb-title{font-family:'Caveat',cursive;font-size:20px;color:#666;flex:1}
-.done-banner{background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;color:#92400e}
-.chrono-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
-.chrono{font-family:'Caveat',cursive;font-size:38px;font-weight:700;color:#374151;line-height:1}
-.chrono.warning{color:#dc2626}
-.chrono-bar{height:5px;width:100px;background:#e5e7eb;border-radius:3px;overflow:hidden}
-.chrono-bar-fill{height:100%;background:#4F6EF7;border-radius:3px;transition:width 1s linear}
-.chrono-bar-fill.warning{background:#dc2626}
-.wb-table-wrap{flex:1;overflow:auto;position:relative;z-index:1}
-.wb-table{width:100%;border-collapse:collapse}
-.wb-table th{font-family:'Caveat',cursive;font-size:21px;font-weight:700;padding:10px 10px 8px;text-align:center;border-bottom:2.5px solid rgba(0,0,0,0.12);border-right:1px dashed rgba(0,0,0,0.1);color:#1e40af;white-space:nowrap;position:sticky;top:0;background:#f7f5f0;z-index:2}
-.wb-table th.player-col{color:#374151;position:sticky;left:0;z-index:3;background:#f7f5f0;min-width:110px;border-right:2px solid rgba(0,0,0,0.12)}
-.wb-table td{padding:1px 3px;border-bottom:1px solid rgba(0,0,0,0.05);border-right:1px dashed rgba(0,0,0,0.08);text-align:center;min-width:110px}
-.wb-table td.row-name{font-family:'Caveat',cursive;font-size:19px;font-weight:700;padding:6px 10px;white-space:nowrap;position:sticky;left:0;background:#f7f5f0;z-index:1;border-right:2px solid rgba(0,0,0,0.1);border-left:5px solid}
-.wb-input{width:100%;padding:7px 8px;border:none;background:transparent;font-family:'Caveat',cursive;font-size:20px;font-weight:600;text-align:center;outline:none}
-.wb-input::placeholder{color:#ccc;font-weight:400}
-.wb-input:disabled{color:#bbb}
-.wb-masked{font-family:'Caveat',cursive;font-size:18px;font-weight:600;padding:7px 8px;display:block;letter-spacing:3px;opacity:0.65}
-.wb-footer{padding:8px 14px;display:flex;gap:10px;align-items:center;border-top:1px solid rgba(0,0,0,0.06);background:#f7f5f0;position:relative;z-index:1}
-.wb-sidebar{width:185px;flex-shrink:0;background:#fff;border-left:1px solid #e5e7eb;padding:12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
-.sidebar-title{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
-.score-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600}
-.legend-row{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:12px;font-weight:600}
-.legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.validation-wrap{width:100%;max-width:1100px;padding:1rem;overflow-x:auto}
-.validation-table{width:100%;border-collapse:collapse;min-width:600px}
-.validation-table th{background:#4F6EF7;color:#fff;padding:8px 10px;font-size:12px;font-weight:600;text-align:center;white-space:nowrap}
-.validation-table td{padding:8px 10px;border:1px solid #e0e7ff;font-size:13px;text-align:center;vertical-align:middle}
-.pts-btn{padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:700;margin:0 2px;transition:all .15s}
-.pts-2{background:#dcfce7;color:#16a34a;border:1px solid #86efac}.pts-2.active{background:#16a34a;color:#fff}
-.pts-1{background:#fef9c3;color:#ca8a04;border:1px solid #fde047}.pts-1.active{background:#ca8a04;color:#fff}
-.pts-0{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5}.pts-0.active{background:#dc2626;color:#fff}
-.podium{display:flex;flex-direction:column;gap:8px;margin:1rem 0}
-.podium-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:600}
-.podium-row.first{background:#fef9c3;border:2px solid #fde047}
-.podium-row.second{background:#f1f5f9;border:2px solid #cbd5e1}
-.podium-row.third{background:#fff7ed;border:2px solid #fed7aa}
-.podium-row.other{background:#f8f9ff;border:2px solid #e0e7ff}
-</style>
-</head>
-<body>
+const express = require('express');
+const http = require('http');
+const { WebSocketServer } = require('ws');
+const path = require('path');
 
-<div class="screen active" id="screen-mode">
-  <div class="card">
-    <h1>🧑‍🏫 Petit Bac</h1>
-    <p class="sub">Le jeu des catégories façon classe !</p>
-    <div class="section-title">Ton rôle</div>
-    <div class="mode-grid">
-      <div class="mode-card" id="mode-prof-joueur" onclick="selectMode('prof-joueur')"><div class="emoji">🎮</div><h3>Prof joueur</h3><p>Tu joues ET tu valides</p></div>
-      <div class="mode-card" id="mode-prof-obs" onclick="selectMode('prof-obs')"><div class="emoji">👁️</div><h3>Prof observateur</h3><p>Tu gères et valides sans jouer</p></div>
-      <div class="mode-card" id="mode-etudiant" onclick="selectMode('etudiant')" style="grid-column:span 2"><div class="emoji">🎓</div><h3>Étudiant(e)</h3><p>Tu rejoins une partie</p></div>
-    </div>
-    <div id="mode-err" class="msg-err" style="display:none"></div>
-    <button class="btn btn-blue" onclick="goToSetup()" style="margin-top:1rem">Continuer →</button>
-    <a href="/" class="back-link">← Retour aux jeux</a>
-  </div>
-</div>
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+app.use(express.static(path.join(__dirname, 'public')));
 
-<div class="screen" id="screen-setup">
-  <div class="card">
-    <h1>🧑‍🏫 Petit Bac</h1>
-    <p class="sub" id="setup-sub"></p>
-    <div id="setup-err" class="msg-err" style="display:none"></div>
-    <div class="field"><label>Ton prénom</label><input id="setup-name" placeholder="Ex: Marie" maxlength="20"/></div>
-    <div class="field"><label>Ta couleur</label><div class="color-picker" id="setup-color-picker"></div></div>
-    <div class="field"><label>Score à atteindre</label><input id="target-score" type="number" value="20" min="5" max="100"/></div>
-    <div class="field"><label>⏱ Chronomètre par manche</label>
-      <select id="timer-select">
-        <option value="0">Pas de chronomètre</option>
-        <option value="30">30 secondes</option>
-        <option value="45">45 secondes</option>
-        <option value="60" selected>60 secondes</option>
-        <option value="90">90 secondes</option>
-        <option value="120">2 minutes</option>
-        <option value="180">3 minutes</option>
-      </select>
-    </div>
-    <div class="field"><label>Nombre de joueurs max</label>
-      <select id="max-players">
-        <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
-        <option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option>
-      </select>
-    </div>
-    <div class="section-title" style="margin-top:1rem">Catégories</div>
-    <div class="cat-list" id="cat-list"></div>
-    <div class="cat-add-row">
-      <select id="cat-select">
-        <option value="">-- Choisir --</option>
-        <option>Prénom</option><option>Ville/Pays</option><option>Animal</option>
-        <option>Métier</option><option>Fruit/Légume</option><option>Objet</option>
-        <option>Adjectif</option><option>Verbe</option><option>Marque</option>
-        <option>Sport</option><option>Couleur</option><option>Vêtement</option>
-      </select>
-      <button class="btn btn-ghost btn-sm" onclick="addCatFromSelect()">+ Ajouter</button>
-    </div>
-    <div class="cat-add-row" style="margin-top:6px">
-      <input id="cat-custom" placeholder="Catégorie personnalisée..." maxlength="30"/>
-      <button class="btn btn-ghost btn-sm" onclick="addCatCustom()">+ Créer</button>
-    </div>
-    <button class="btn btn-blue" onclick="createRoom()" style="margin-top:1.5rem">Créer la partie</button>
-    <a href="/" class="back-link">← Retour aux jeux</a>
-  </div>
-</div>
+const rooms = {};
 
-<div class="screen" id="screen-join">
-  <div class="card">
-    <h1>🧑‍🏫 Petit Bac</h1>
-    <p class="sub">Rejoindre une partie</p>
-    <div id="join-err" class="msg-err" style="display:none"></div>
-    <div class="field"><label>Ton prénom</label><input id="join-name" placeholder="Ex: Thomas" maxlength="20"/></div>
-    <div class="field"><label>Ta couleur</label><div class="color-picker" id="join-color-picker"></div></div>
-    <div class="field"><label>Code de la salle</label><input id="join-code" placeholder="Ex: ABC12" maxlength="5" style="text-transform:uppercase"/></div>
-    <button class="btn btn-blue" onclick="joinRoom()">Rejoindre</button>
-    <a href="/" class="back-link">← Retour aux jeux</a>
-  </div>
-</div>
-
-<div class="screen" id="screen-wait">
-  <div class="card">
-    <h1>🧑‍🏫 Petit Bac</h1>
-    <div class="code-box"><div class="code-big" id="wait-code"></div><div class="code-hint">Code de la salle</div></div>
-    <div class="section-title">Joueurs connectés</div>
-    <div class="players-waiting" id="players-waiting"></div>
-    <p style="font-size:13px;color:#aaa;text-align:center;margin-top:1rem" id="wait-msg">En attente des joueurs...</p>
-    <button class="btn btn-green" id="btn-start" style="display:none;margin-top:1rem" onclick="startRound()">▶ Lancer la partie !</button>
-  </div>
-</div>
-
-<div class="screen" id="screen-letter">
-  <div class="card" style="text-align:center">
-    <div class="letter-label">La lettre de ce tour est</div>
-    <div class="letter-display" id="letter-big"></div>
-    <p style="font-size:13px;color:#aaa;margin-bottom:1.5rem">Prépare-toi !</p>
-    <div id="letter-prof-btns" style="display:none;flex-direction:column;gap:8px">
-      <button class="btn btn-orange" onclick="rerollLetter()">🎲 Relancer la lettre</button>
-      <button class="btn btn-green" onclick="startPlaying()">▶ C'est parti !</button>
-    </div>
-    <div id="letter-wait-msg" style="display:none;font-size:13px;color:#aaa">En attente du professeur...</div>
-  </div>
-</div>
-
-<div class="screen" id="screen-game">
-  <div class="whiteboard">
-    <div class="wb-header">
-      <div class="wb-letter" id="wb-letter"></div>
-      <div class="wb-title">Petit Bac</div>
-      <div id="done-banner" class="done-banner" style="display:none"></div>
-      <div class="chrono-wrap" id="chrono-wrap" style="display:none">
-        <div class="chrono" id="chrono"></div>
-        <div class="chrono-bar"><div class="chrono-bar-fill" id="chrono-fill"></div></div>
-      </div>
-    </div>
-    <div class="wb-table-wrap">
-      <table class="wb-table">
-        <thead id="wb-thead"></thead>
-        <tbody id="wb-tbody"></tbody>
-      </table>
-    </div>
-    <div class="wb-footer">
-      <button class="btn btn-green btn-sm" id="btn-finish" onclick="finishAnswers()" style="width:auto;padding:8px 20px">✓ J'ai fini !</button>
-      <span id="finish-wait" style="display:none;font-size:12px;color:#aaa">En attente de la validation du professeur...</span>
-    </div>
-  </div>
-  <div class="wb-sidebar">
-    <div><div class="sidebar-title">📊 Scores</div><div id="sidebar-scores"></div></div>
-    <div><div class="sidebar-title">🎨 Légende</div><div id="sidebar-legend"></div></div>
-  </div>
-</div>
-
-<div class="screen" id="screen-validation">
-  <div class="validation-wrap">
-    <h1 style="text-align:center;margin-bottom:0.5rem">🔍 Validation</h1>
-    <p class="sub">Attribue les points pour chaque réponse</p>
-    <div id="val-scores" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem"></div>
-    <div style="overflow-x:auto">
-      <table class="validation-table"><thead id="val-thead"></thead><tbody id="val-tbody"></tbody></table>
-    </div>
-    <div id="validation-footer" style="margin-top:1rem;text-align:center"></div>
-  </div>
-</div>
-
-<div class="screen" id="screen-scores">
-  <div class="card">
-    <h1>📊 Scores</h1>
-    <p class="sub" id="scores-sub"></p>
-    <div class="podium" id="podium"></div>
-    <button class="btn btn-blue" id="btn-next-round" style="display:none;margin-top:1rem" onclick="startRound()">▶ Manche suivante</button>
-    <p id="scores-wait-msg" style="font-size:13px;color:#aaa;text-align:center;margin-top:1rem"></p>
-  </div>
-</div>
-
-<div class="screen" id="screen-end">
-  <div class="card">
-    <h1>🏆 Fin de partie !</h1>
-    <div class="podium" id="end-podium"></div>
-    <button class="btn btn-blue" onclick="location.href='/petit-bac/'" style="margin-top:1.5rem">Rejouer</button>
-    <a href="/" class="back-link">← Retour aux jeux</a>
-  </div>
-</div>
-
-<script>
-const ALL_COLORS=['#2563eb','#16a34a','#ea580c','#9333ea','#dc2626','#0d9488','#db2777','#ca8a04','#0284c7','#65a30d','#e11d48','#7c3aed'];
-let ws, state={mode:null,myName:'',myColor:'#2563eb',myIndex:-1,isProf:false,isProfPlayer:false,playerNames:[],playerColors:{},categories:[],targetScore:20,timerSeconds:60,letter:'',scores:{},myAnswers:{},done:false,pendingPoints:{},takenColors:[],chronoLeft:0,chronoTotal:0,chronoInterval:null};
-let setupCats=['Prénom','Ville/Pays','Animal','Métier','Fruit/Légume'];
-
-function renderColorPicker(id,taken){document.getElementById(id).innerHTML=ALL_COLORS.map(c=>{const isTaken=taken.includes(c)&&c!==state.myColor;const isSel=c===state.myColor;return`<div class="color-dot${isTaken?' taken':''}${isSel?' selected':''}" style="background:${c}" onclick="selectColor('${c}','${id}')"></div>`;}).join('');}
-function selectColor(c,id){if(state.takenColors.includes(c)&&c!==state.myColor)return;state.myColor=c;renderColorPicker(id,state.takenColors);}
-function renderCatList(){document.getElementById('cat-list').innerHTML=setupCats.map((c,i)=>`<div class="cat-item"><span>${c}</span><button onclick="removeCat(${i})">✕</button></div>`).join('');}
-function removeCat(i){setupCats.splice(i,1);renderCatList();}
-function addCatFromSelect(){const s=document.getElementById('cat-select');if(!s.value)return;if(!setupCats.includes(s.value))setupCats.push(s.value);s.value='';renderCatList();}
-function addCatCustom(){const inp=document.getElementById('cat-custom');if(!inp.value.trim())return;if(!setupCats.includes(inp.value.trim()))setupCats.push(inp.value.trim());inp.value='';renderCatList();}
-function selectMode(m){state.mode=m;document.querySelectorAll('.mode-card').forEach(el=>el.classList.remove('selected'));document.getElementById('mode-'+m).classList.add('selected');}
-function goToSetup(){if(!state.mode){showErr('mode-err','Choisis un rôle.');return;}if(state.mode==='etudiant'){renderColorPicker('join-color-picker',state.takenColors);show('screen-join');return;}state.isProf=true;state.isProfPlayer=state.mode==='prof-joueur';document.getElementById('setup-sub').textContent=state.isProfPlayer?'Prof joueur':'Prof observateur';renderColorPicker('setup-color-picker',state.takenColors);renderCatList();show('screen-setup');}
-function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function getWsUrl(){return(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host;}
-function connect(cb){ws=new WebSocket(getWsUrl());ws.onopen=cb;ws.onmessage=e=>handleMsg(JSON.parse(e.data));ws.onclose=()=>console.log('Connexion perdue');setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'ping'}));},25000);}
-function send(data){if(ws&&ws.readyState===1)ws.send(JSON.stringify(data));}
-
-function createRoom(){
-  const name=document.getElementById('setup-name').value.trim();
-  if(!name){showErr('setup-err','Entre ton prénom.');return;}
-  if(setupCats.length<2){showErr('setup-err','Ajoute au moins 2 catégories.');return;}
-  const target=parseInt(document.getElementById('target-score').value)||20;
-  const timer=parseInt(document.getElementById('timer-select').value)||0;
-  const max=parseInt(document.getElementById('max-players').value);
-  state.myName=name;state.targetScore=target;state.timerSeconds=timer;state.categories=[...setupCats];
-  connect(()=>send({type:'create_room',name,color:state.myColor,isProf:true,maxPlayers:state.isProfPlayer?max:max+1,gameType:'petit-bac',categories:setupCats,targetScore:target,timerSeconds:timer,isProfPlayer:state.isProfPlayer}));
+function broadcast(room, data) {
+  const msg = JSON.stringify(data);
+  room.players.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });
 }
-function joinRoom(){
-  const name=document.getElementById('join-name').value.trim();
-  const code=document.getElementById('join-code').value.trim().toUpperCase();
-  if(!name){showErr('join-err','Entre ton prénom.');return;}
-  if(!code){showErr('join-err','Entre le code.');return;}
-  state.myName=name;state.isProf=false;
-  connect(()=>send({type:'join_room',name,color:state.myColor,code,gameType:'petit-bac'}));
-}
+function sendTo(ws, data) { if (ws.readyState === 1) ws.send(JSON.stringify(data)); }
 
-function startChrono(seconds){
-  clearInterval(state.chronoInterval);state.chronoLeft=seconds;state.chronoTotal=seconds;
-  const wrap=document.getElementById('chrono-wrap');
-  if(seconds>0){wrap.style.display='flex';updateChrono();state.chronoInterval=setInterval(()=>{state.chronoLeft--;updateChrono();if(state.chronoLeft<=0){clearInterval(state.chronoInterval);if(!state.done)finishAnswers();}},1000);}
-  else{wrap.style.display='none';}
-}
-function updateChrono(){
-  const el=document.getElementById('chrono');const fill=document.getElementById('chrono-fill');
-  const s=Math.max(0,state.chronoLeft);const m=Math.floor(s/60);const sec=s%60;
-  el.textContent=m>0?`${m}:${sec.toString().padStart(2,'0')}`:s+'s';
-  el.className='chrono'+(s<=10?' warning':'');
-  fill.className='chrono-bar-fill'+(s<=10?' warning':'');
-  fill.style.width=state.chronoTotal>0?(s/state.chronoTotal*100)+'%':'100%';
-}
-function stopChrono(){clearInterval(state.chronoInterval);}
+// ─── SCRABBLE ───────────────────────────────────────────────────────────────
 
-function handleMsg(msg){
-  if(msg.type==='room_created'){state.myIndex=0;state.playerColors[state.myName]=state.myColor;document.getElementById('wait-code').textContent=msg.code;renderWaiting([state.myName]);document.getElementById('btn-start').style.display='block';show('screen-wait');}
-  else if(msg.type==='room_joined'){state.myIndex=msg.playerIndex;if(msg.takenColors)state.takenColors=msg.takenColors;show('screen-wait');}
-  else if(msg.type==='player_joined'){state.playerNames=msg.players;if(msg.colors)msg.colors.forEach((c,i)=>state.playerColors[msg.players[i]]=c);if(msg.colors)state.takenColors=msg.colors;if(msg.code)document.getElementById('wait-code').textContent=msg.code;renderWaiting(msg.players);document.getElementById('wait-msg').textContent=`${msg.count}/${msg.max} joueurs`;}
-  else if(msg.type==='pb_config'){state.categories=msg.categories;state.targetScore=msg.targetScore;state.timerSeconds=msg.timerSeconds||0;state.playerNames=msg.playerNames;if(msg.colors)msg.colors.forEach((c,i)=>state.playerColors[msg.playerNames[i]]=c);if(msg.colors)state.takenColors=msg.colors;msg.playerNames.forEach(n=>state.scores[n]=0);renderColorPicker('join-color-picker',state.takenColors);}
-  else if(msg.type==='pb_letter'){state.letter=msg.letter;state.done=false;state.myAnswers={};stopChrono();document.getElementById('letter-big').textContent=msg.letter;document.getElementById('letter-big').style.color=state.myColor;if(state.isProf){document.getElementById('letter-prof-btns').style.display='flex';document.getElementById('letter-wait-msg').style.display='none';}else{document.getElementById('letter-prof-btns').style.display='none';document.getElementById('letter-wait-msg').style.display='block';}show('screen-letter');}
-  else if(msg.type==='pb_start_playing'){state.done=false;state.myAnswers={};buildWbTable();document.getElementById('wb-letter').textContent=state.letter;document.getElementById('wb-letter').style.color=state.myColor;document.getElementById('done-banner').style.display='none';document.getElementById('finish-wait').style.display='none';const showFinish=!state.isProf||state.isProfPlayer;document.getElementById('btn-finish').style.display=showFinish?'inline-block':'none';renderSidebar();show('screen-game');startChrono(state.timerSeconds);}
-  else if(msg.type==='pb_answer_update'){if(msg.playerName!==state.myName){const idx=state.playerNames.indexOf(msg.playerName);const cell=document.getElementById('cell-'+idx+'-'+encodeURIComponent(msg.category));if(cell){cell.textContent=msg.masked||'—';cell.style.color=state.playerColors[msg.playerName]||'#888';}}}
-  else if(msg.type==='pb_finished'){state.done=true;stopChrono();const b=document.getElementById('done-banner');b.textContent=msg.finisher===state.myName?'✓ Tu as fini en premier !':`🏃 ${msg.finisher} a terminé avant toi !`;b.style.display='block';document.getElementById('btn-finish').style.display='none';if(!state.isProf)document.getElementById('finish-wait').style.display='block';document.querySelectorAll('.wb-input').forEach(inp=>inp.disabled=true);}
-  else if(msg.type==='pb_validate'){
-    state.playerNames=msg.playerNames;state.categories=msg.categories;
-    if(msg.colors)msg.colors.forEach((c,i)=>state.playerColors[msg.playerNames[i]]=c);
-    buildValidationTable(msg.answers);
-    document.getElementById('validation-footer').innerHTML=state.isProf
-      ?'<button class="btn btn-blue" onclick="submitValidation()" style="max-width:360px;margin:0 auto;display:block">Valider →</button>'
-      :'<p style="font-size:13px;color:#aaa;text-align:center;padding:1rem">En attente de la validation du professeur...</p>';
-    show('screen-validation');
+const LETTER_DATA = {
+  A:{v:1,n:9},B:{v:3,n:2},C:{v:2,n:2},D:{v:2,n:3},E:{v:1,n:15},F:{v:4,n:2},G:{v:2,n:2},
+  H:{v:4,n:2},I:{v:1,n:8},J:{v:8,n:1},K:{v:10,n:1},L:{v:1,n:5},M:{v:2,n:3},N:{v:1,n:6},
+  O:{v:1,n:6},P:{v:3,n:2},Q:{v:8,n:1},R:{v:1,n:6},S:{v:1,n:6},T:{v:1,n:6},U:{v:1,n:6},
+  V:{v:4,n:2},W:{v:10,n:1},X:{v:10,n:1},Y:{v:10,n:1},Z:{v:10,n:1},'?':{v:0,n:2}
+};
+const BONUS_MAP = {};
+[[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='TW');
+[[1,1],[2,2],[3,3],[4,4],[10,10],[11,11],[12,12],[13,13],[1,13],[2,12],[3,11],[4,10],[10,4],[11,3],[12,2],[13,1]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='DW');
+[[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],[9,1],[9,5],[9,9],[9,13],[13,5],[13,9]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='TL');
+[[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],[6,2],[6,6],[6,8],[6,12],[7,3],[7,11],[8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],[12,6],[12,8],[14,3],[14,11]].forEach(([r,c])=>BONUS_MAP[r+'_'+c]='DL');
+
+function makeBag() {
+  let bag = [];
+  for (let [l, d] of Object.entries(LETTER_DATA)) for (let i = 0; i < d.n; i++) bag.push(l);
+  for (let i = bag.length-1; i > 0; i--) { const j=Math.floor(Math.random()*(i+1)); [bag[i],bag[j]]=[bag[j],bag[i]]; }
+  return bag;
+}
+function drawTiles(rack, bag) { while (rack.length < 7 && bag.length > 0) rack.push(bag.pop()); }
+function createScrabbleGame(playerNames) {
+  const bag = makeBag();
+  const players = playerNames.map(name => { const rack=[]; drawTiles(rack,bag); return {name,score:0,rack}; });
+  return { type:'scrabble', players, bag, board:Array.from({length:15},()=>Array(15).fill(null)), current:0, placed:{}, firstMove:true, pass:0, pendingWord:null, log:[] };
+}
+function scoreWord(placed, cells) {
+  let score=0, wordMult=1;
+  cells.forEach(({r,c,l})=>{
+    const key=r+'_'+c, pts=l==='?'?0:(LETTER_DATA[l]?.v||0), b=BONUS_MAP[key], isNew=!!placed[key];
+    if(isNew&&b==='TL') score+=pts*3; else if(isNew&&b==='DL') score+=pts*2; else score+=pts;
+    if(isNew&&b==='TW') wordMult*=3; else if(isNew&&b==='DW') wordMult*=2;
+  });
+  return score*wordMult;
+}
+function extendWord(board, placed, r, c, horiz) {
+  let cells=[];
+  if(horiz){
+    let sc=c; while(sc>0&&(board[r][sc-1]||placed[r+'_'+(sc-1)])) sc--;
+    let ec=c; while(ec<14&&(board[r][ec+1]||placed[r+'_'+(ec+1)])) ec++;
+    for(let cc=sc;cc<=ec;cc++){const l=board[r][cc]?.l||placed[r+'_'+cc];if(l)cells.push({r,c:cc,l});}
+  } else {
+    let sr=r; while(sr>0&&(board[sr-1][c]||placed[(sr-1)+'_'+c])) sr--;
+    let er=r; while(er<14&&(board[er+1][c]||placed[(er+1)+'_'+c])) er++;
+    for(let rr=sr;rr<=er;rr++){const l=board[rr][c]?.l||placed[rr+'_'+c];if(l)cells.push({r:rr,c,l});}
   }
-  else if(msg.type==='pb_scores'){msg.scores.forEach(({name,score})=>state.scores[name]=score);buildScoresScreen(msg.scores,msg.roundPoints,msg.finished,msg.winner);}
-  else if(msg.type==='pb_next_round'){document.getElementById('wait-msg').textContent='Prêt pour la manche suivante !';document.getElementById('btn-start').style.display=state.isProf?'block':'none';show('screen-wait');}
-  else if(msg.type==='error'){showErr('setup-err',msg.message);showErr('join-err',msg.message);}
+  return cells;
+}
+function calcTotalScore(board, placed, newCells, isHoriz) {
+  let total=0; const words=[];
+  const mainWord=extendWord(board,placed,newCells[0].r,newCells[0].c,isHoriz);
+  if(mainWord.length>=1){const s=scoreWord(placed,mainWord);total+=s;words.push({word:mainWord.map(c=>c.l).join(''),score:s});}
+  newCells.forEach(({r,c})=>{
+    const cross=extendWord(board,placed,r,c,!isHoriz);
+    if(cross.length>1){const s=scoreWord(placed,cross);total+=s;words.push({word:cross.map(x=>x.l).join(''),score:s});}
+  });
+  if(newCells.length===7) total+=50;
+  return {total,words};
 }
 
-function renderWaiting(players){document.getElementById('players-waiting').innerHTML=players.map(n=>{const c=state.playerColors[n]||'#4F6EF7';return`<span class="player-chip" style="color:${c};border-color:${c};background:${c}18">${n}${n===state.myName?' (toi)':''}</span>`;}).join('');}
-function startRound(){send({type:'pb_start_round'});}
-function rerollLetter(){send({type:'pb_reroll'});}
-function startPlaying(){send({type:'pb_go'});}
+// ─── IMPOSTEUR ──────────────────────────────────────────────────────────────
 
-function buildWbTable(){
-  const thead=document.getElementById('wb-thead');const tbody=document.getElementById('wb-tbody');
-  thead.innerHTML='<tr><th class="player-col">Joueur</th>'+state.categories.map(c=>`<th>${c}</th>`).join('')+'</tr>';
-  tbody.innerHTML=state.playerNames.map((name,pi)=>{
-    const color=state.playerColors[name]||'#888';
-    const isMe=pi===state.myIndex&&(!state.isProf||state.isProfPlayer);
-    const cells=state.categories.map(cat=>{
-      const eid=encodeURIComponent(cat);
-      if(isMe)return`<td style="background:${color}0a"><input class="wb-input" id="inp-${eid}" style="color:${color}" placeholder="${state.letter}..." maxlength="30" oninput="onInput('${cat}',this.value)"/></td>`;
-      return`<td><span class="wb-masked" id="cell-${pi}-${eid}" style="color:${color}88">—</span></td>`;
-    }).join('');
-    return`<tr><td class="row-name" style="color:${color};border-left-color:${color}">${name}${pi===state.myIndex?' ✏️':''}</td>${cells}</tr>`;
-  }).join('');
+const WORD_PAIRS = [
+  ['plage','piscine'],['chien','chat'],['pizza','burger'],['voiture','moto'],
+  ['mer','lac'],['avion','train'],['pomme','poire'],['soleil','lune'],
+  ['football','basketball'],['café','thé'],['livre','magazine'],['école','université'],
+  ['printemps','automne'],['montagne','colline'],['guitare','violon'],['médecin','infirmier'],
+  ['boulangerie','pâtisserie'],['cinéma','théâtre'],['forêt','jungle'],['château','manoir'],
+  ['roi','président'],['piano','orgue'],['requin','dauphin'],['tigre','lion'],
+  ['Paris','Londres'],['neige','grêle'],['désert','savane'],['spaghetti','macaroni'],['chocolat','caramel']
+];
+
+function createImposteurGame(playerNames, mode, variant, wordA, wordB) {
+  let realWord, imposteurWord;
+  if (mode === 'auto') {
+    const pair = WORD_PAIRS[Math.floor(Math.random()*WORD_PAIRS.length)];
+    [realWord, imposteurWord] = Math.random()<0.5 ? pair : [pair[1],pair[0]];
+  } else { realWord=wordA; imposteurWord=wordB; }
+  const imposteurIdx = Math.floor(Math.random()*playerNames.length);
+  const players = playerNames.map((name,i) => ({
+    name, word: i===imposteurIdx?(variant==='mystery'?'???':imposteurWord):realWord,
+    isImposteur:i===imposteurIdx, hints:[], vote:null
+  }));
+  return { type:'imposteur', mode, variant, realWord, imposteurWord, imposteurIdx, players, phase:'hints', current:0, round:1, maxRounds:3, log:[] };
 }
 
-function onInput(cat,val){state.myAnswers[cat]=val;const stars='*'.repeat(Math.floor(Math.random()*6)+3);const masked=val.length>0?val[0]+stars:'';send({type:'pb_answer',category:cat,answer:val,masked});}
+// ─── PETIT BAC ──────────────────────────────────────────────────────────────
 
-function renderSidebar(){
-  document.getElementById('sidebar-scores').innerHTML=state.playerNames.map(n=>{const c=state.playerColors[n]||'#888';return`<div class="score-row"><span style="color:${c}">${n}</span><span style="color:${c}">${state.scores[n]||0}/${state.targetScore}</span></div>`;}).join('');
-  document.getElementById('sidebar-legend').innerHTML=state.playerNames.map(n=>{const c=state.playerColors[n]||'#888';return`<div class="legend-row"><div class="legend-dot" style="background:${c}"></div><span style="color:${c}">${n}</span></div>`;}).join('');
+function randomLetter() {
+  return 'ABCDEFGHIJLMNOPRSTV'[Math.floor(Math.random()*19)];
 }
 
-function finishAnswers(){if(state.done)return;send({type:'pb_finish',answers:state.myAnswers});}
-
-function buildValidationTable(allAnswers){
-  state.pendingPoints={};
-  state.playerNames.forEach(n=>{state.pendingPoints[n]={};state.categories.forEach(c=>state.pendingPoints[n][c]=1);});
-  document.getElementById('val-thead').innerHTML='<tr><th>Catégorie</th>'+state.playerNames.map(n=>{const c=state.playerColors[n]||'#4F6EF7';return`<th style="background:${c}">${n}</th>`;}).join('')+'</tr>';
-  document.getElementById('val-tbody').innerHTML=state.categories.map(cat=>{
-    const cells=state.playerNames.map((n,i)=>{
-      const ans=(allAnswers[n]&&allAnswers[n][cat])||'';
-      const c=state.playerColors[n]||'#888';
-      const showBtns=state.isProf&&ans;
-      return`<td>
-        <div style="font-weight:700;color:${c};margin-bottom:4px;font-family:'Caveat',cursive;font-size:17px">${ans||'—'}</div>
-        ${showBtns?`<div>
-          <button class="pts-btn pts-2" id="v2-${i}-${cat}" onclick="setPts('${n}','${cat}',2,${i})">2</button>
-          <button class="pts-btn pts-1 active" id="v1-${i}-${cat}" onclick="setPts('${n}','${cat}',1,${i})">1</button>
-          <button class="pts-btn pts-0" id="v0-${i}-${cat}" onclick="setPts('${n}','${cat}',0,${i})">0</button>
-        </div>`:''}
-      </td>`;
-    }).join('');
-    return`<tr><td style="font-weight:700;text-align:left;white-space:nowrap;color:#555;font-family:'Caveat',cursive;font-size:17px">${cat}</td>${cells}</tr>`;
-  }).join('');
-  document.getElementById('val-scores').innerHTML=state.playerNames.map(n=>{const c=state.playerColors[n]||'#888';return`<span style="padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;color:${c};border:2px solid ${c};background:${c}18">${n}: ${state.scores[n]||0}</span>`;}).join('');
+function createPetitBacGame(playerNames, playerColors, categories, targetScore, timerSeconds, profIsPlayer) {
+  const scores = {};
+  playerNames.forEach(n => scores[n] = 0);
+  return { type:'petit-bac', playerNames, playerColors, categories, targetScore, timerSeconds, profIsPlayer, scores, phase:'waiting', letter:null, round:0, answers:{}, finisher:null, timerHandle:null };
 }
 
-function setPts(n,cat,pts,pi){state.pendingPoints[n][cat]=pts;[0,1,2].forEach(p=>{const b=document.getElementById(`v${p}-${pi}-${cat}`);if(b)b.classList.toggle('active',p===pts);});}
-function submitValidation(){send({type:'pb_submit_points',points:state.pendingPoints});}
+// ─── WEBSOCKET ──────────────────────────────────────────────────────────────
 
-function buildScoresScreen(scores,roundPoints,finished,winner){
-  const sorted=[...scores].sort((a,b)=>b.score-a.score);
-  document.getElementById('scores-sub').textContent=finished?`🏆 ${winner} a gagné !`:`Objectif : ${state.targetScore} pts`;
-  const ranks=['first','second','third'];
-  const html=sorted.map((p,i)=>{const c=state.playerColors[p.name]||'#888';const g=roundPoints&&roundPoints[p.name]?` (+${roundPoints[p.name]})`:''
-  return`<div class="podium-row ${ranks[i]||'other'}"><span style="color:${c}">${['🥇','🥈','🥉'][i]||''} ${p.name}</span><span style="color:${c}">${p.score} pts<span style="font-size:12px;font-weight:400">${g}</span></span></div>`;}).join('');
-  if(finished){document.getElementById('end-podium').innerHTML=html;show('screen-end');}
-  else{document.getElementById('podium').innerHTML=html;document.getElementById('btn-next-round').style.display=state.isProf?'block':'none';document.getElementById('scores-wait-msg').textContent=state.isProf?'':'En attente du professeur...';show('screen-scores');}
+wss.on('connection', (ws) => {
+  ws.roomCode = null; ws.playerIndex = null; ws.playerName = null; ws.playerColor = '#2563eb';
+
+  ws.on('message', (raw) => {
+    let msg; try { msg = JSON.parse(raw); } catch { return; }
+
+    if (msg.type === 'create_room') {
+      const code = Math.random().toString(36).slice(2,7).toUpperCase();
+      ws.playerColor = msg.color || '#2563eb';
+      ws.playerName = msg.name;
+      rooms[code] = {
+        players:[ws], playerNames:[msg.name], playerColors:[ws.playerColor], isProf:[true],
+        game:null, maxPlayers:msg.maxPlayers||2, gameType:msg.gameType||'scrabble',
+        categories:msg.categories||[], targetScore:msg.targetScore||20,
+        timerSeconds:msg.timerSeconds||0, isProfPlayer:msg.isProfPlayer||false
+      };
+      ws.roomCode=code; ws.playerIndex=0;
+      sendTo(ws,{type:'room_created',code,playerIndex:0});
+    }
+
+    else if (msg.type === 'join_room') {
+      const room=rooms[msg.code];
+      if(!room){sendTo(ws,{type:'error',message:'Salle introuvable.'});return;}
+      if(room.game&&room.gameType==='scrabble'){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
+      if(room.players.length>=room.maxPlayers){sendTo(ws,{type:'error',message:'Salle pleine.'});return;}
+      const color=msg.color||'#2563eb';
+      if(room.playerColors.includes(color)){sendTo(ws,{type:'error',message:'Cette couleur est déjà prise !'});return;}
+      const idx=room.players.length;
+      ws.playerColor=color; ws.playerName=msg.name;
+      room.players.push(ws); room.playerNames.push(msg.name); room.playerColors.push(color); room.isProf.push(false);
+      ws.roomCode=msg.code; ws.playerIndex=idx;
+      sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx,takenColors:room.playerColors});
+      broadcast(room,{type:'player_joined',players:room.playerNames,colors:room.playerColors,count:room.players.length,max:room.maxPlayers,code:msg.code});
+      if(room.gameType==='petit-bac'){
+        sendTo(ws,{type:'pb_config',categories:room.categories,targetScore:room.targetScore,timerSeconds:room.timerSeconds,playerNames:room.playerNames,colors:room.playerColors});
+      }
+      if(room.players.length===room.maxPlayers&&room.gameType==='scrabble'){
+        room.game=createScrabbleGame(room.playerNames);
+        broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
+        room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
+      }
+    }
+
+    // ── PETIT BAC ──
+    else if (msg.type === 'pb_start_round') {
+      const room=rooms[ws.roomCode]; if(!room) return;
+      if(!room.game) room.game=createPetitBacGame(room.playerNames,room.playerColors,room.categories,room.targetScore,room.timerSeconds,room.isProfPlayer);
+      const game=room.game;
+      if(game.timerHandle){clearTimeout(game.timerHandle);game.timerHandle=null;}
+      game.letter=randomLetter(); game.answers={}; game.finisher=null; game.phase='letter';
+      broadcast(room,{type:'pb_letter',letter:game.letter});
+    }
+
+    else if (msg.type === 'pb_reroll') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      room.game.letter=randomLetter();
+      broadcast(room,{type:'pb_letter',letter:room.game.letter});
+    }
+
+    else if (msg.type === 'pb_go') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game;
+      game.phase='playing';
+      broadcast(room,{type:'pb_start_playing',letter:game.letter,timerSeconds:room.timerSeconds});
+      if(room.timerSeconds>0){
+        game.timerHandle=setTimeout(()=>{
+          if(game.phase==='playing'){
+            game.finisher='⏱ Temps écoulé';
+            game.phase='finished';
+            broadcast(room,{type:'pb_finished',finisher:'⏱ Temps écoulé'});
+            setTimeout(()=>{
+              broadcast(room,{type:'pb_validate',answers:game.answers,playerNames:room.playerNames,colors:room.playerColors,categories:room.categories});
+            },2000);
+          }
+        }, room.timerSeconds*1000);
+      }
+    }
+
+    else if (msg.type === 'pb_answer') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.phase!=='playing') return;
+      if(!game.answers[ws.playerName]) game.answers[ws.playerName]={};
+      game.answers[ws.playerName][msg.category]=msg.answer;
+      broadcast(room,{type:'pb_answer_update',playerName:ws.playerName,category:msg.category,masked:msg.masked});
+    }
+
+    else if (msg.type === 'pb_finish') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.phase!=='playing'||game.finisher) return;
+      if(game.timerHandle){clearTimeout(game.timerHandle);game.timerHandle=null;}
+      game.finisher=ws.playerName; game.phase='finished';
+      if(msg.answers) game.answers[ws.playerName]=msg.answers;
+      broadcast(room,{type:'pb_finished',finisher:ws.playerName});
+      setTimeout(()=>{
+        broadcast(room,{type:'pb_validate',answers:game.answers,playerNames:room.playerNames,colors:room.playerColors,categories:room.categories});
+      },2000);
+    }
+
+    else if (msg.type === 'pb_submit_points') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game;
+      const roundPoints={};
+      room.playerNames.forEach(n=>roundPoints[n]=0);
+      Object.entries(msg.points).forEach(([playerName,catPoints])=>{
+        Object.entries(catPoints).forEach(([cat,pts])=>{
+          // Ne compter que si la réponse existe et n'est pas vide
+          const ans=game.answers[playerName]&&game.answers[playerName][cat];
+          if(ans&&ans.trim()!==''){
+            roundPoints[playerName]=(roundPoints[playerName]||0)+Number(pts);
+          }
+        });
+        game.scores[playerName]=(game.scores[playerName]||0)+roundPoints[playerName];
+      });
+      const scores=room.playerNames.map(n=>({name:n,score:game.scores[n]||0}));
+      const winner=scores.find(s=>s.score>=game.targetScore);
+      broadcast(room,{type:'pb_scores',scores,roundPoints,finished:!!winner,winner:winner?.name});
+      if(!winner){game.phase='waiting';setTimeout(()=>broadcast(room,{type:'pb_next_round'}),3000);}
+    }
+
+    // ── IMPOSTEUR ──
+    else if (msg.type === 'start_imposteur') {
+      const room=rooms[ws.roomCode]; if(!room) return;
+      if(room.players.length<3){sendTo(ws,{type:'error',message:'Il faut au moins 3 joueurs.'});return;}
+      room.game=createImposteurGame(room.playerNames,msg.mode,msg.variant,msg.wordA,msg.wordB);
+      broadcast(room,{type:'imposteur_start',playerNames:room.playerNames,playerCount:room.players.length});
+      room.players.forEach((p,i)=>sendTo(p,{type:'your_word',word:room.game.players[i].word}));
+      broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:1,maxRounds:3});
+    }
+
+    else if (msg.type === 'submit_hint') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.type!=='imposteur'||game.phase!=='hints') return;
+      if(game.current!==ws.playerIndex) return;
+      const hint=(msg.hint||'').trim().slice(0,50);
+      if(!hint){sendTo(ws,{type:'error',message:'Indice vide.'});return;}
+      game.players[ws.playerIndex].hints.push(hint);
+      broadcast(room,{type:'hint_added',playerIndex:ws.playerIndex,playerName:room.playerNames[ws.playerIndex],hint,hints:game.players.map(p=>p.hints),log:game.log});
+      const allGaveHint=game.players.every(p=>p.hints.length>=game.round);
+      if(allGaveHint){
+        if(game.round>=game.maxRounds){game.phase='vote';broadcast(room,{type:'imposteur_phase',phase:'vote',playerNames:room.playerNames});}
+        else{game.round++;game.current=0;broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:game.round,maxRounds:game.maxRounds});}
+      } else {
+        game.current=(game.current+1)%game.players.length;
+        broadcast(room,{type:'imposteur_phase',phase:'hints',current:game.current,currentName:room.playerNames[game.current],round:game.round,maxRounds:game.maxRounds});
+      }
+    }
+
+    else if (msg.type === 'submit_vote') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.type!=='imposteur'||game.phase!=='vote') return;
+      game.players[ws.playerIndex].vote=msg.votedIndex;
+      broadcast(room,{type:'vote_update',votes:game.players.map(p=>p.vote),playerNames:room.playerNames});
+      const allVoted=game.players.every(p=>p.vote!==null);
+      if(allVoted){
+        const tally=Array(game.players.length).fill(0);
+        game.players.forEach(p=>{if(p.vote!==null)tally[p.vote]++;});
+        const suspected=tally.indexOf(Math.max(...tally));
+        game.phase='reveal';
+        broadcast(room,{type:'imposteur_reveal',imposteurIdx:game.imposteurIdx,imposteurName:room.playerNames[game.imposteurIdx],realWord:game.realWord,imposteurWord:game.variant==='mystery'?'???':game.imposteurWord,variant:game.variant,suspected,suspectedName:room.playerNames[suspected],tally,playerNames:room.playerNames,votes:game.players.map(p=>p.vote)});
+      }
+    }
+
+    // ── SCRABBLE ──
+    else if (msg.type === 'place_tiles') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      if(room.game.current!==ws.playerIndex) return;
+      room.game.placed=msg.placed;
+      broadcast(room,{type:'tiles_placed',placed:msg.placed,playerIndex:ws.playerIndex});
+    }
+
+    else if (msg.type === 'submit_word') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
+      const newCells=Object.keys(game.placed).filter(k=>!k.startsWith('rack_')).map(k=>{const[r,c]=k.split('_').map(Number);return{r,c,l:game.placed[k]};});
+      if(newCells.length===0){sendTo(ws,{type:'error',message:'Aucune lettre placée.'});return;}
+      const rows=newCells.map(c=>c.r),cols=newCells.map(c=>c.c);
+      const minR=Math.min(...rows),maxR=Math.max(...rows),minC=Math.min(...cols),maxC=Math.max(...cols);
+      if(minR!==maxR&&minC!==maxC){sendTo(ws,{type:'error',message:'Les lettres doivent être alignées.'});return;}
+      const isHoriz=minR===maxR;
+      if(isHoriz){for(let c=minC;c<=maxC;c++)if(!game.board[minR][c]&&!game.placed[minR+'_'+c]){sendTo(ws,{type:'error',message:'Espace vide.'});return;}}
+      else{for(let r=minR;r<=maxR;r++)if(!game.board[r][minC]&&!game.placed[r+'_'+minC]){sendTo(ws,{type:'error',message:'Espace vide.'});return;}}
+      if(game.firstMove&&!game.placed['7_7']){sendTo(ws,{type:'error',message:'Le premier mot doit passer par ★.'});return;}
+      if(!game.firstMove){
+        const adj=newCells.some(({r,c})=>[[r-1,c],[r+1,c],[r,c-1],[r,c+1]].some(([nr,nc])=>nr>=0&&nr<15&&nc>=0&&nc<15&&game.board[nr][nc]));
+        if(!adj){sendTo(ws,{type:'error',message:'Le mot doit être connecté.'});return;}
+      }
+      const {total,words}=calcTotalScore(game.board,game.placed,newCells,isHoriz);
+      const mainWord=words.length>0?words[0].word:'';
+      const allWords=words.map(w=>w.word).join(', ');
+      game.pendingWord={word:mainWord,allWords,words,cells:newCells,total,playerIndex:ws.playerIndex};
+      broadcast(room,{type:'word_pending',word:mainWord,allWords,words,score:total,playerName:room.playerNames[ws.playerIndex],playerIndex:ws.playerIndex,placed:game.placed});
+    }
+
+    else if (msg.type === 'validate_word') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game||!room.game.pendingWord) return;
+      const game=room.game; const pw=game.pendingWord;
+      if(msg.accepted){
+        pw.cells.forEach(({r,c,l})=>{game.board[r][c]={l};});
+        const usedIdxs=Object.keys(game.placed).filter(k=>k.startsWith('rack_')).map(k=>parseInt(k.split('_')[1]));
+        game.players[pw.playerIndex].rack=game.players[pw.playerIndex].rack.filter((_,i)=>!usedIdxs.includes(i));
+        drawTiles(game.players[pw.playerIndex].rack,game.bag);
+        game.players[pw.playerIndex].score+=pw.total;
+        game.placed={};game.firstMove=false;game.pass=0;game.pendingWord=null;
+        const logEntry=pw.words.length>1?`✓ ${pw.words.map(w=>`"${w.word}"+${w.score}`).join('|')}=+${pw.total}pts`:` ✓ "${pw.word}" +${pw.total} pts (${room.playerNames[pw.playerIndex]})`;
+        game.log.push(logEntry);
+        broadcast(room,{type:'word_accepted',word:pw.allWords,score:pw.total,playerIndex:pw.playerIndex,board:game.board,scores:game.players.map(p=>p.score),bagCount:game.bag.length,log:game.log});
+        sendTo(room.players[pw.playerIndex],{type:'your_rack',rack:game.players[pw.playerIndex].rack});
+        if(game.players[pw.playerIndex].rack.length===0&&game.bag.length===0){broadcast(room,{type:'game_over',scores:game.players.map(p=>({name:p.name,score:p.score}))});return;}
+        game.current=(game.current+1)%game.players.length;
+        broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
+      } else {
+        game.pendingWord=null;
+        broadcast(room,{type:'word_refused',playerIndex:pw.playerIndex,word:pw.word});
+        sendTo(room.players[pw.playerIndex],{type:'error',message:`"${pw.word}" refusé. Rappelle tes lettres et réessaie.`});
+      }
+    }
+
+    else if (msg.type === 'pass_turn') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
+      game.placed={};game.pass++;
+      game.log.push(`⏭ ${room.playerNames[ws.playerIndex]} passe`);
+      if(game.pass>=game.players.length*2){broadcast(room,{type:'game_over',scores:game.players.map(p=>({name:p.name,score:p.score}))});return;}
+      game.current=(game.current+1)%game.players.length;
+      broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
+    }
+
+    else if (msg.type === 'exchange_tile') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.current!==ws.playerIndex) return;
+      if(game.bag.length===0){sendTo(ws,{type:'error',message:'Plus de lettres.'});return;}
+      const player=game.players[ws.playerIndex];
+      const idx=msg.tileIndex;
+      if(idx===undefined||idx<0||idx>=player.rack.length) return;
+      const old=player.rack[idx];
+      game.bag.unshift(old);
+      for(let i=game.bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[game.bag[i],game.bag[j]]=[game.bag[j],game.bag[i]];}
+      player.rack[idx]=game.bag.pop();
+      game.placed={};game.pass=0;
+      sendTo(ws,{type:'your_rack',rack:player.rack,exchangedIdx:idx});
+      game.current=(game.current+1)%game.players.length;
+      broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
+    }
+
+    else if (msg.type === 'ping') { sendTo(ws,{type:'pong'}); }
+  });
+
+  ws.on('close', ()=>{
+    const room=rooms[ws.roomCode];
+    if(room) broadcast(room,{type:'player_left',name:room.playerNames[ws.playerIndex]});
+  });
+});
+
+function sanitizeScrabble(game) {
+  return {board:game.board,scores:game.players.map(p=>p.score),playerNames:game.players.map(p=>p.name),current:game.current,bagCount:game.bag.length,firstMove:game.firstMove,log:game.log};
 }
 
-renderCatList();renderColorPicker('setup-color-picker',[]);renderColorPicker('join-color-picker',[]);
-</script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, ()=>console.log(`Serveur jeux de classe — port ${PORT}`));
