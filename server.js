@@ -85,8 +85,7 @@ const WORD_PAIRS = [
   ['printemps','automne'],['montagne','colline'],['guitare','violon'],['médecin','infirmier'],
   ['boulangerie','pâtisserie'],['cinéma','théâtre'],['forêt','jungle'],['château','manoir'],
   ['roi','président'],['piano','orgue'],['requin','dauphin'],['tigre','lion'],
-  ['Paris','Londres'],['neige','grêle'],['désert','savane'],['arc-en-ciel','aurore boréale'],
-  ['spaghetti','macaroni'],['chocolat','caramel']
+  ['Paris','Londres'],['neige','grêle'],['désert','savane'],['spaghetti','macaroni'],['chocolat','caramel']
 ];
 
 function createImposteurGame(playerNames, mode, variant, wordA, wordB) {
@@ -94,47 +93,59 @@ function createImposteurGame(playerNames, mode, variant, wordA, wordB) {
   if (mode === 'auto') {
     const pair = WORD_PAIRS[Math.floor(Math.random()*WORD_PAIRS.length)];
     [realWord, imposteurWord] = Math.random()<0.5 ? pair : [pair[1],pair[0]];
-  } else {
-    realWord = wordA; imposteurWord = wordB;
-  }
+  } else { realWord=wordA; imposteurWord=wordB; }
   const imposteurIdx = Math.floor(Math.random()*playerNames.length);
   const players = playerNames.map((name,i) => ({
-    name,
-    word: i===imposteurIdx ? (variant==='mystery' ? '???' : imposteurWord) : realWord,
-    isImposteur: i===imposteurIdx,
-    hints: [],
-    vote: null
+    name, word: i===imposteurIdx?(variant==='mystery'?'???':imposteurWord):realWord,
+    isImposteur:i===imposteurIdx, hints:[], vote:null
   }));
   return { type:'imposteur', mode, variant, realWord, imposteurWord, imposteurIdx, players, phase:'hints', current:0, round:1, maxRounds:3, log:[] };
+}
+
+// ─── PETIT BAC ──────────────────────────────────────────────────────────────
+
+function randomLetter() {
+  return 'ABCDEFGHIJLMNOPRSTV'[Math.floor(Math.random()*19)];
+}
+
+function createPetitBacGame(playerNames, categories, targetScore, profIsPlayer) {
+  const scores = {};
+  playerNames.forEach(n => scores[n] = 0);
+  return { type:'petit-bac', playerNames, categories, targetScore, profIsPlayer, scores, phase:'waiting', letter:null, round:0, answers:{}, finisher:null };
 }
 
 // ─── WEBSOCKET ──────────────────────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
-  ws.roomCode = null; ws.playerIndex = null;
+  ws.roomCode = null; ws.playerIndex = null; ws.playerName = null;
 
   ws.on('message', (raw) => {
     let msg; try { msg = JSON.parse(raw); } catch { return; }
 
     if (msg.type === 'create_room') {
       const code = Math.random().toString(36).slice(2,7).toUpperCase();
-      rooms[code] = { players:[ws], playerNames:[msg.name], isProf:[msg.isProf||false], game:null, maxPlayers:msg.maxPlayers||2, gameType:msg.gameType||'scrabble' };
-      ws.roomCode=code; ws.playerIndex=0;
+      rooms[code] = {
+        players:[ws], playerNames:[msg.name], isProf:[true],
+        game:null, maxPlayers:msg.maxPlayers||2, gameType:msg.gameType||'scrabble',
+        categories: msg.categories||[], targetScore: msg.targetScore||20, isProfPlayer: msg.isProfPlayer||false
+      };
+      ws.roomCode=code; ws.playerIndex=0; ws.playerName=msg.name;
       sendTo(ws,{type:'room_created',code,playerIndex:0});
     }
 
     else if (msg.type === 'join_room') {
       const room=rooms[msg.code];
       if(!room){sendTo(ws,{type:'error',message:'Salle introuvable.'});return;}
-      if(room.game){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
+      if(room.game&&room.gameType==='scrabble'){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
       if(room.players.length>=room.maxPlayers){sendTo(ws,{type:'error',message:'Salle pleine.'});return;}
       const idx=room.players.length;
-      room.players.push(ws);room.playerNames.push(msg.name);room.isProf.push(msg.isProf||false);
-      ws.roomCode=msg.code;ws.playerIndex=idx;
+      room.players.push(ws); room.playerNames.push(msg.name); room.isProf.push(false);
+      ws.roomCode=msg.code; ws.playerIndex=idx; ws.playerName=msg.name;
       sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx});
       broadcast(room,{type:'player_joined',players:room.playerNames,count:room.players.length,max:room.maxPlayers,code:msg.code});
-
-      // Démarrage automatique uniquement pour le Scrabble
+      if(room.gameType==='petit-bac') {
+        sendTo(ws,{type:'pb_config',categories:room.categories,targetScore:room.targetScore,playerNames:room.playerNames});
+      }
       if(room.players.length===room.maxPlayers && room.gameType==='scrabble'){
         room.game=createScrabbleGame(room.playerNames);
         broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
@@ -142,10 +153,73 @@ wss.on('connection', (ws) => {
       }
     }
 
+    // ── PETIT BAC ──
+    else if (msg.type === 'pb_start_round') {
+      const room=rooms[ws.roomCode]; if(!room) return;
+      if(!room.game) room.game = createPetitBacGame(room.playerNames, room.categories, room.targetScore, room.isProfPlayer);
+      const game=room.game;
+      game.letter = randomLetter();
+      game.answers = {};
+      game.finisher = null;
+      game.phase = 'letter';
+      broadcast(room,{type:'pb_letter',letter:game.letter});
+    }
+
+    else if (msg.type === 'pb_reroll') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      room.game.letter = randomLetter();
+      broadcast(room,{type:'pb_letter',letter:room.game.letter});
+    }
+
+    else if (msg.type === 'pb_go') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      room.game.phase = 'playing';
+      broadcast(room,{type:'pb_start_playing',letter:room.game.letter});
+    }
+
+    else if (msg.type === 'pb_answer') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.phase!=='playing') return;
+      if(!game.answers[ws.playerName]) game.answers[ws.playerName]={};
+      game.answers[ws.playerName][msg.category] = msg.answer;
+      broadcast(room,{type:'pb_answer_update',playerName:ws.playerName,category:msg.category,masked:msg.masked});
+    }
+
+    else if (msg.type === 'pb_finish') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game; if(game.phase!=='playing'||game.finisher) return;
+      game.finisher = ws.playerName;
+      game.phase = 'finished';
+      if(msg.answers) game.answers[ws.playerName] = msg.answers;
+      broadcast(room,{type:'pb_finished',finisher:ws.playerName});
+      setTimeout(()=>{
+        broadcast(room,{type:'pb_validate',answers:game.answers,playerNames:room.playerNames,categories:room.categories});
+      },2000);
+    }
+
+    else if (msg.type === 'pb_submit_points') {
+      const room=rooms[ws.roomCode]; if(!room||!room.game) return;
+      const game=room.game;
+      const roundPoints={};
+      room.playerNames.forEach(n=>roundPoints[n]=0);
+      Object.entries(msg.points).forEach(([playerName, catPoints])=>{
+        Object.values(catPoints).forEach(pts=>{ roundPoints[playerName]=(roundPoints[playerName]||0)+Number(pts); });
+        game.scores[playerName]=(game.scores[playerName]||0)+roundPoints[playerName];
+      });
+      const scores = room.playerNames.map(n=>({name:n,score:game.scores[n]||0}));
+      const winner = scores.find(s=>s.score>=game.targetScore);
+      broadcast(room,{type:'pb_scores',scores,roundPoints,finished:!!winner,winner:winner?.name});
+      if(!winner) {
+        game.phase='waiting';
+        setTimeout(()=>broadcast(room,{type:'pb_next_round'}),3000);
+      }
+    }
+
+    // ── IMPOSTEUR ──
     else if (msg.type === 'start_imposteur') {
       const room=rooms[ws.roomCode]; if(!room) return;
       if(room.players.length<3){sendTo(ws,{type:'error',message:'Il faut au moins 3 joueurs.'});return;}
-      room.game = createImposteurGame(room.playerNames, msg.mode, msg.variant, msg.wordA, msg.wordB);
+      room.game=createImposteurGame(room.playerNames,msg.mode,msg.variant,msg.wordA,msg.wordB);
       broadcast(room,{type:'imposteur_start',playerNames:room.playerNames,playerCount:room.players.length});
       room.players.forEach((p,i)=>sendTo(p,{type:'your_word',word:room.game.players[i].word}));
       broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:1,maxRounds:3});
@@ -158,17 +232,11 @@ wss.on('connection', (ws) => {
       const hint=(msg.hint||'').trim().slice(0,50);
       if(!hint){sendTo(ws,{type:'error',message:'Indice vide.'});return;}
       game.players[ws.playerIndex].hints.push(hint);
-      game.log.push(`${room.playerNames[ws.playerIndex]}: "${hint}"`);
       broadcast(room,{type:'hint_added',playerIndex:ws.playerIndex,playerName:room.playerNames[ws.playerIndex],hint,hints:game.players.map(p=>p.hints),log:game.log});
       const allGaveHint=game.players.every(p=>p.hints.length>=game.round);
       if(allGaveHint){
-        if(game.round>=game.maxRounds){
-          game.phase='vote';
-          broadcast(room,{type:'imposteur_phase',phase:'vote',playerNames:room.playerNames});
-        } else {
-          game.round++;game.current=0;
-          broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:game.round,maxRounds:game.maxRounds});
-        }
+        if(game.round>=game.maxRounds){game.phase='vote';broadcast(room,{type:'imposteur_phase',phase:'vote',playerNames:room.playerNames});}
+        else{game.round++;game.current=0;broadcast(room,{type:'imposteur_phase',phase:'hints',current:0,currentName:room.playerNames[0],round:game.round,maxRounds:game.maxRounds});}
       } else {
         game.current=(game.current+1)%game.players.length;
         broadcast(room,{type:'imposteur_phase',phase:'hints',current:game.current,currentName:room.playerNames[game.current],round:game.round,maxRounds:game.maxRounds});
@@ -184,13 +252,13 @@ wss.on('connection', (ws) => {
       if(allVoted){
         const tally=Array(game.players.length).fill(0);
         game.players.forEach(p=>{if(p.vote!==null)tally[p.vote]++;});
-        const maxVotes=Math.max(...tally);
-        const suspected=tally.indexOf(maxVotes);
+        const suspected=tally.indexOf(Math.max(...tally));
         game.phase='reveal';
         broadcast(room,{type:'imposteur_reveal',imposteurIdx:game.imposteurIdx,imposteurName:room.playerNames[game.imposteurIdx],realWord:game.realWord,imposteurWord:game.variant==='mystery'?'???':game.imposteurWord,variant:game.variant,suspected,suspectedName:room.playerNames[suspected],tally,playerNames:room.playerNames,votes:game.players.map(p=>p.vote)});
       }
     }
 
+    // ── SCRABBLE ──
     else if (msg.type === 'place_tiles') {
       const room=rooms[ws.roomCode]; if(!room||!room.game) return;
       if(room.game.current!==ws.playerIndex) return;
@@ -231,7 +299,7 @@ wss.on('connection', (ws) => {
         drawTiles(game.players[pw.playerIndex].rack,game.bag);
         game.players[pw.playerIndex].score+=pw.total;
         game.placed={};game.firstMove=false;game.pass=0;game.pendingWord=null;
-        const logEntry=pw.words.length>1?`✓ ${pw.words.map(w=>`"${w.word}"+${w.score}`).join(' | ')} = +${pw.total} pts (${room.playerNames[pw.playerIndex]})`:` ✓ "${pw.word}" +${pw.total} pts (${room.playerNames[pw.playerIndex]})`;
+        const logEntry=pw.words.length>1?`✓ ${pw.words.map(w=>`"${w.word}"+${w.score}`).join('|')}=+${pw.total}pts`:` ✓ "${pw.word}" +${pw.total} pts (${room.playerNames[pw.playerIndex]})`;
         game.log.push(logEntry);
         broadcast(room,{type:'word_accepted',word:pw.allWords,score:pw.total,playerIndex:pw.playerIndex,board:game.board,scores:game.players.map(p=>p.score),bagCount:game.bag.length,log:game.log});
         sendTo(room.players[pw.playerIndex],{type:'your_rack',rack:game.players[pw.playerIndex].rack});
@@ -267,7 +335,6 @@ wss.on('connection', (ws) => {
       for(let i=game.bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[game.bag[i],game.bag[j]]=[game.bag[j],game.bag[i]];}
       player.rack[idx]=game.bag.pop();
       game.placed={};game.pass=0;
-      game.log.push(`🔄 ${room.playerNames[ws.playerIndex]} a échangé une lettre`);
       sendTo(ws,{type:'your_rack',rack:player.rack,exchangedIdx:idx});
       game.current=(game.current+1)%game.players.length;
       broadcast(room,{type:'next_turn',current:game.current,currentName:game.players[game.current].name,log:game.log});
