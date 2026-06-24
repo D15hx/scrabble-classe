@@ -241,7 +241,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
     <div style="overflow-x:auto">
       <table class="validation-table"><thead id="val-thead"></thead><tbody id="val-tbody"></tbody></table>
     </div>
-    <button class="btn btn-blue" onclick="submitValidation()" style="margin-top:1rem;max-width:360px;margin-left:auto;margin-right:auto;display:block">Valider →</button>
+    <div id="validation-footer" style="margin-top:1rem;text-align:center"></div>
   </div>
 </div>
 
@@ -327,7 +327,7 @@ function handleMsg(msg){
   else if(msg.type==='pb_start_playing'){state.done=false;state.myAnswers={};buildWbTable();document.getElementById('wb-letter').textContent=state.letter;document.getElementById('wb-letter').style.color=state.myColor;document.getElementById('done-banner').style.display='none';document.getElementById('finish-wait').style.display='none';const showFinish=!state.isProf||state.isProfPlayer;document.getElementById('btn-finish').style.display=showFinish?'inline-block':'none';renderSidebar();show('screen-game');startChrono(state.timerSeconds);}
   else if(msg.type==='pb_answer_update'){if(msg.playerName!==state.myName){const idx=state.playerNames.indexOf(msg.playerName);const cell=document.getElementById('cell-'+idx+'-'+encodeURIComponent(msg.category));if(cell){cell.textContent=msg.masked||'—';cell.style.color=state.playerColors[msg.playerName]||'#888';}}}
   else if(msg.type==='pb_finished'){state.done=true;stopChrono();const b=document.getElementById('done-banner');b.textContent=msg.finisher===state.myName?'✓ Tu as fini en premier !':`🏃 ${msg.finisher} a terminé avant toi !`;b.style.display='block';document.getElementById('btn-finish').style.display='none';if(!state.isProf)document.getElementById('finish-wait').style.display='block';document.querySelectorAll('.wb-input').forEach(inp=>inp.disabled=true);}
-  else if(msg.type==='pb_validate'){state.playerNames=msg.playerNames;state.categories=msg.categories;if(msg.colors)msg.colors.forEach((c,i)=>state.playerColors[msg.playerNames[i]]=c);buildValidationTable(msg.answers);show('screen-validation');}
+  else if(msg.type==='pb_validate'){state.playerNames=msg.playerNames;state.categories=msg.categories;if(msg.colors)msg.colors.forEach((c,i)=>state.playerColors[msg.playerNames[i]]=c);buildValidationTable(msg.answers);show('screen-validation');document.getElementById('validation-footer').innerHTML=state.isProf?'<button class="btn btn-blue" onclick="submitValidation()" style="max-width:360px;margin:0 auto;display:block">Valider →</button>':'<p style="font-size:13px;color:#aaa;text-align:center;margin-top:1rem">En attente de la validation du professeur...</p>';}
   else if(msg.type==='pb_scores'){msg.scores.forEach(({name,score})=>state.scores[name]=score);buildScoresScreen(msg.scores,msg.roundPoints,msg.finished,msg.winner);}
   else if(msg.type==='pb_next_round'){document.getElementById('wait-msg').textContent='Prêt pour la manche suivante !';document.getElementById('btn-start').style.display=state.isProf?'block':'none';show('screen-wait');}
   else if(msg.type==='error'){showErr('setup-err',msg.message);showErr('join-err',msg.message);}
@@ -366,7 +366,7 @@ function buildValidationTable(allAnswers){
   state.pendingPoints={};state.playerNames.forEach(n=>{state.pendingPoints[n]={};state.categories.forEach(c=>state.pendingPoints[n][c]=1);});
   document.getElementById('val-thead').innerHTML='<tr><th>Catégorie</th>'+state.playerNames.map(n=>{const c=state.playerColors[n]||'#4F6EF7';return`<th style="background:${c}">${n}</th>`;}).join('')+'</tr>';
   document.getElementById('val-tbody').innerHTML=state.categories.map(cat=>{
-    const cells=state.playerNames.map((n,i)=>{const ans=(allAnswers[n]&&allAnswers[n][cat])||'';const c=state.playerColors[n]||'#888';return`<td><div style="font-weight:700;color:${c};margin-bottom:4px;font-family:'Caveat',cursive;font-size:17px">${ans||'—'}</div>${ans?`<div><button class="pts-btn pts-2" id="v2-${i}-${cat}" onclick="setPts('${n}','${cat}',2,${i})">2</button><button class="pts-btn pts-1 active" id="v1-${i}-${cat}" onclick="setPts('${n}','${cat}',1,${i})">1</button><button class="pts-btn pts-0" id="v0-${i}-${cat}" onclick="setPts('${n}','${cat}',0,${i})">0</button></div>`:''}</td>`;}).join('');
+    const cells=state.playerNames.map((n,i)=>{const ans=(allAnswers[n]&&allAnswers[n][cat])||'';const c=state.playerColors[n]||'#888';;}).join('');
     return`<tr><td style="font-weight:700;text-align:left;white-space:nowrap;color:#555;font-family:'Caveat',cursive;font-size:17px">${cat}</td>${cells}</tr>`;
   }).join('');
   document.getElementById('val-scores').innerHTML=state.playerNames.map(n=>{const c=state.playerColors[n]||'#888';return`<span style="padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;color:${c};border:2px solid ${c};background:${c}18">${n}: ${state.scores[n]||0}</span>`;}).join('');
