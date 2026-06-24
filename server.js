@@ -108,28 +108,29 @@ function randomLetter() {
   return 'ABCDEFGHIJLMNOPRSTV'[Math.floor(Math.random()*19)];
 }
 
-function createPetitBacGame(playerNames, playerColors, categories, targetScore, profIsPlayer) {
+function createPetitBacGame(playerNames, playerColors, categories, targetScore, timerSeconds, profIsPlayer) {
   const scores = {};
   playerNames.forEach(n => scores[n] = 0);
-  return { type:'petit-bac', playerNames, playerColors, categories, targetScore, profIsPlayer, scores, phase:'waiting', letter:null, round:0, answers:{}, finisher:null };
+  return { type:'petit-bac', playerNames, playerColors, categories, targetScore, timerSeconds, profIsPlayer, scores, phase:'waiting', letter:null, round:0, answers:{}, finisher:null, timerHandle:null };
 }
 
 // ─── WEBSOCKET ──────────────────────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
-  ws.roomCode = null; ws.playerIndex = null; ws.playerName = null; ws.playerColor = '#4F6EF7';
+  ws.roomCode = null; ws.playerIndex = null; ws.playerName = null; ws.playerColor = '#2563eb';
 
   ws.on('message', (raw) => {
     let msg; try { msg = JSON.parse(raw); } catch { return; }
 
     if (msg.type === 'create_room') {
       const code = Math.random().toString(36).slice(2,7).toUpperCase();
-      ws.playerColor = msg.color || '#4F6EF7';
+      ws.playerColor = msg.color || '#2563eb';
       ws.playerName = msg.name;
       rooms[code] = {
         players:[ws], playerNames:[msg.name], playerColors:[ws.playerColor], isProf:[true],
         game:null, maxPlayers:msg.maxPlayers||2, gameType:msg.gameType||'scrabble',
-        categories: msg.categories||[], targetScore: msg.targetScore||20, isProfPlayer: msg.isProfPlayer||false
+        categories:msg.categories||[], targetScore:msg.targetScore||20,
+        timerSeconds:msg.timerSeconds||0, isProfPlayer:msg.isProfPlayer||false
       };
       ws.roomCode=code; ws.playerIndex=0;
       sendTo(ws,{type:'room_created',code,playerIndex:0});
@@ -140,8 +141,8 @@ wss.on('connection', (ws) => {
       if(!room){sendTo(ws,{type:'error',message:'Salle introuvable.'});return;}
       if(room.game&&room.gameType==='scrabble'){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
       if(room.players.length>=room.maxPlayers){sendTo(ws,{type:'error',message:'Salle pleine.'});return;}
-      const color = msg.color||'#4F6EF7';
-      if(room.playerColors.includes(color)){sendTo(ws,{type:'error',message:'Cette couleur est déjà prise, choisis-en une autre.'});return;}
+      const color=msg.color||'#2563eb';
+      if(room.playerColors.includes(color)){sendTo(ws,{type:'error',message:'Cette couleur est déjà prise !'});return;}
       const idx=room.players.length;
       ws.playerColor=color; ws.playerName=msg.name;
       room.players.push(ws); room.playerNames.push(msg.name); room.playerColors.push(color); room.isProf.push(false);
@@ -149,7 +150,7 @@ wss.on('connection', (ws) => {
       sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx,takenColors:room.playerColors});
       broadcast(room,{type:'player_joined',players:room.playerNames,colors:room.playerColors,count:room.players.length,max:room.maxPlayers,code:msg.code});
       if(room.gameType==='petit-bac'){
-        sendTo(ws,{type:'pb_config',categories:room.categories,targetScore:room.targetScore,playerNames:room.playerNames,colors:room.playerColors});
+        sendTo(ws,{type:'pb_config',categories:room.categories,targetScore:room.targetScore,timerSeconds:room.timerSeconds,playerNames:room.playerNames,colors:room.playerColors});
       }
       if(room.players.length===room.maxPlayers&&room.gameType==='scrabble'){
         room.game=createScrabbleGame(room.playerNames);
@@ -161,8 +162,9 @@ wss.on('connection', (ws) => {
     // ── PETIT BAC ──
     else if (msg.type === 'pb_start_round') {
       const room=rooms[ws.roomCode]; if(!room) return;
-      if(!room.game) room.game=createPetitBacGame(room.playerNames,room.playerColors,room.categories,room.targetScore,room.isProfPlayer);
+      if(!room.game) room.game=createPetitBacGame(room.playerNames,room.playerColors,room.categories,room.targetScore,room.timerSeconds,room.isProfPlayer);
       const game=room.game;
+      if(game.timerHandle){clearTimeout(game.timerHandle);game.timerHandle=null;}
       game.letter=randomLetter(); game.answers={}; game.finisher=null; game.phase='letter';
       broadcast(room,{type:'pb_letter',letter:game.letter});
     }
@@ -175,8 +177,23 @@ wss.on('connection', (ws) => {
 
     else if (msg.type === 'pb_go') {
       const room=rooms[ws.roomCode]; if(!room||!room.game) return;
-      room.game.phase='playing';
-      broadcast(room,{type:'pb_start_playing',letter:room.game.letter});
+      const game=room.game;
+      game.phase='playing';
+      broadcast(room,{type:'pb_start_playing',letter:game.letter,timerSeconds:room.timerSeconds});
+
+      // Lancer le timer côté serveur si configuré
+      if(room.timerSeconds>0){
+        game.timerHandle=setTimeout(()=>{
+          if(game.phase==='playing'){
+            game.finisher='⏱ Temps écoulé';
+            game.phase='finished';
+            broadcast(room,{type:'pb_finished',finisher:'⏱ Temps écoulé'});
+            setTimeout(()=>{
+              broadcast(room,{type:'pb_validate',answers:game.answers,playerNames:room.playerNames,colors:room.playerColors,categories:room.categories});
+            },2000);
+          }
+        }, room.timerSeconds*1000);
+      }
     }
 
     else if (msg.type === 'pb_answer') {
@@ -190,6 +207,7 @@ wss.on('connection', (ws) => {
     else if (msg.type === 'pb_finish') {
       const room=rooms[ws.roomCode]; if(!room||!room.game) return;
       const game=room.game; if(game.phase!=='playing'||game.finisher) return;
+      if(game.timerHandle){clearTimeout(game.timerHandle);game.timerHandle=null;}
       game.finisher=ws.playerName; game.phase='finished';
       if(msg.answers) game.answers[ws.playerName]=msg.answers;
       broadcast(room,{type:'pb_finished',finisher:ws.playerName});
