@@ -142,10 +142,13 @@ wss.on('connection', (ws) => {
       if(room.game&&room.gameType==='scrabble'){sendTo(ws,{type:'error',message:'Partie déjà commencée.'});return;}
       if(room.players.length>=room.maxPlayers){sendTo(ws,{type:'error',message:'Salle pleine.'});return;}
       const color=msg.color||'#2563eb';
-      if(room.playerColors.includes(color)){sendTo(ws,{type:'error',message:'Cette couleur est déjà prise !'});return;}
+      if(room.playerColors&&room.playerColors.includes(color)&&room.gameType==='petit-bac'){sendTo(ws,{type:'error',message:'Cette couleur est déjà prise !'});return;}
       const idx=room.players.length;
       ws.playerColor=color; ws.playerName=msg.name;
-      room.players.push(ws); room.playerNames.push(msg.name); room.playerColors.push(color); room.isProf.push(false);
+      room.players.push(ws); room.playerNames.push(msg.name);
+      if(!room.playerColors) room.playerColors=[];
+      room.playerColors.push(color);
+      room.isProf.push(false);
       ws.roomCode=msg.code; ws.playerIndex=idx;
       sendTo(ws,{type:'room_joined',code:msg.code,playerIndex:idx,takenColors:room.playerColors});
       broadcast(room,{type:'player_joined',players:room.playerNames,colors:room.playerColors,count:room.players.length,max:room.maxPlayers,code:msg.code});
@@ -180,8 +183,6 @@ wss.on('connection', (ws) => {
       const game=room.game;
       game.phase='playing';
       broadcast(room,{type:'pb_start_playing',letter:game.letter,timerSeconds:room.timerSeconds});
-
-      // Lancer le timer côté serveur si configuré
       if(room.timerSeconds>0){
         game.timerHandle=setTimeout(()=>{
           if(game.phase==='playing'){
@@ -222,7 +223,12 @@ wss.on('connection', (ws) => {
       const roundPoints={};
       room.playerNames.forEach(n=>roundPoints[n]=0);
       Object.entries(msg.points).forEach(([playerName,catPoints])=>{
-        Object.values(catPoints).forEach(pts=>{roundPoints[playerName]=(roundPoints[playerName]||0)+Number(pts);});
+        Object.entries(catPoints).forEach(([cat,pts])=>{
+          const ans=game.answers[playerName]&&game.answers[playerName][cat];
+          if(ans&&ans.trim()!==''){
+            roundPoints[playerName]=(roundPoints[playerName]||0)+Number(pts);
+          }
+        });
         game.scores[playerName]=(game.scores[playerName]||0)+roundPoints[playerName];
       });
       const scores=room.playerNames.map(n=>({name:n,score:game.scores[n]||0}));
