@@ -14,9 +14,7 @@ function broadcast(room, data) {
   const msg = JSON.stringify(data);
   room.players.forEach(ws => { if (ws.readyState === 1) ws.send(msg); });
 }
-function sendTo(ws, data) { if (ws.readyState === 1) ws.send(JSON.stringify(data)); }
-
-// ─── SCRABBLE ───────────────────────────────────────────────────────────────
+function sendTo(ws, data) { if (ws.readyState === 1) ws.send(JSON.stringify(data)); }// ─── SCRABBLE ───────────────────────────────────────────────────────────────
 
 const LETTER_DATA = {
   A:{v:1,n:9},B:{v:3,n:2},C:{v:2,n:2},D:{v:2,n:3},E:{v:1,n:15},F:{v:4,n:2},G:{v:2,n:2},
@@ -74,9 +72,7 @@ function calcTotalScore(board, placed, newCells, isHoriz) {
   });
   if(newCells.length===7) total+=50;
   return {total,words};
-}
-
-// ─── IMPOSTEUR ──────────────────────────────────────────────────────────────
+}// ─── IMPOSTEUR ──────────────────────────────────────────────────────────────
 
 const WORD_PAIRS = [
   ['plage','piscine'],['chien','chat'],['pizza','burger'],['voiture','moto'],
@@ -112,9 +108,7 @@ function createPetitBacGame(playerNames, playerColors, categories, targetScore, 
   const scores = {};
   playerNames.forEach(n => scores[n] = 0);
   return { type:'petit-bac', playerNames, playerColors, categories, targetScore, timerSeconds, profIsPlayer, scores, phase:'waiting', letter:null, round:0, answers:{}, finisher:null, timerHandle:null };
-}
-
-// ─── WEBSOCKET ──────────────────────────────────────────────────────────────
+}// ─── WEBSOCKET ──────────────────────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
   ws.roomCode = null; ws.playerIndex = null; ws.playerName = null; ws.playerColor = '#2563eb';
@@ -160,9 +154,7 @@ wss.on('connection', (ws) => {
         broadcast(room,{type:'game_start',game:sanitizeScrabble(room.game),playerNames:room.playerNames});
         room.players.forEach((p,i)=>sendTo(p,{type:'your_rack',rack:room.game.players[i].rack}));
       }
-    }
-
-    // ── PETIT BAC ──
+    }// ── PETIT BAC ──
     else if (msg.type === 'pb_start_round') {
       const room=rooms[ws.roomCode]; if(!room) return;
       if(!room.game) room.game=createPetitBacGame(room.playerNames,room.playerColors,room.categories,room.targetScore,room.timerSeconds,room.isProfPlayer);
@@ -235,9 +227,7 @@ wss.on('connection', (ws) => {
       const winner=scores.find(s=>s.score>=game.targetScore);
       broadcast(room,{type:'pb_scores',scores,roundPoints,finished:!!winner,winner:winner?.name});
       if(!winner){game.phase='waiting';setTimeout(()=>broadcast(room,{type:'pb_next_round'}),3000);}
-    }
-
-    // ── IMPOSTEUR ──
+    }// ── IMPOSTEUR ──
     else if (msg.type === 'start_imposteur') {
       const room=rooms[ws.roomCode]; if(!room) return;
       if(room.players.length<3){sendTo(ws,{type:'error',message:'Il faut au moins 3 joueurs.'});return;}
@@ -278,9 +268,7 @@ wss.on('connection', (ws) => {
         game.phase='reveal';
         broadcast(room,{type:'imposteur_reveal',imposteurIdx:game.imposteurIdx,imposteurName:room.playerNames[game.imposteurIdx],realWord:game.realWord,imposteurWord:game.variant==='mystery'?'???':game.imposteurWord,variant:game.variant,suspected,suspectedName:room.playerNames[suspected],tally,playerNames:room.playerNames,votes:game.players.map(p=>p.vote)});
       }
-    }
-
-    // ── SCRABBLE ──
+    }// ── SCRABBLE ──
     else if (msg.type === 'place_tiles') {
       const room=rooms[ws.roomCode]; if(!room||!room.game) return;
       if(room.game.current!==ws.playerIndex) return;
