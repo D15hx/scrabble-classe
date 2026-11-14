@@ -122,6 +122,8 @@
           <label><input type="radio" name="mode" value="duel" checked style="width:auto"> ⚔️ Duels 1 contre 1</label>
           <label><input type="radio" name="mode" value="classe" style="width:auto"> 🏫 La classe contre le prof</label>
         </div>
+        <p style="font-size:1.4rem;margin:8px 0 4px">Ton prénom (affiché si tu joues un duel)</p>
+        <input id="inProfNom" maxlength="20" autocomplete="off" placeholder="le prof">
         <div class="err"></div>
         <button class="red" id="btnCreate" style="width:100%">Créer une partie</button>
       </div>
@@ -226,10 +228,25 @@
       <div class="board">
         <div class="row" style="justify-content:space-between">
           <h2 id="pListeTitre">Élèves</h2>
-          <button id="pRaz" style="font-size:1.2rem">Remettre les scores à 0</button>
+          <div class="row"><button id="pVoir" style="font-size:1.2rem">👁 Voir les persos</button>
+          <button id="pRaz" style="font-size:1.2rem">Remettre les scores à 0</button></div>
         </div>
         <div id="pListe"></div>
       </div>
+    </div>
+
+    <div class="board hidden" id="pJeu" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="gros" id="pjTitre"></div>
+          <div class="compteur" id="pjInfo"></div>
+        </div>
+        <div class="row">
+          <button class="green" id="pjDevine">🎯 Je devine !</button>
+          <button id="pjRemettre" style="font-size:1.2rem">↺ Tout remettre</button>
+        </div>
+      </div>
+      <div class="grille" id="pGrille" style="margin-top:10px"></div>
     </div>
   </section>
 </div>
@@ -300,7 +317,7 @@ $('btnJoin').onclick = () => {
 $('inCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
 $('btnCreate').onclick = () => {
   sessionStorage.removeItem('qec_eleve');
-  send({ type:'qec_create', mode: document.querySelector('input[name=mode]:checked').value });
+  send({ type:'qec_create', mode: document.querySelector('input[name=mode]:checked').value, name: $('inProfNom').value.trim() });
 };
 
 // =====================================================================
@@ -410,7 +427,7 @@ function closeModal() { $('modal').classList.add('hidden'); }
 // ---------------- PROF ----------------
 function renderProf() {
   show('prof');
-  closeModal();
+  if (!$('modal').dataset.confirm) closeModal();
   const duel = S.mode === 'duel';
   $('pCode').textContent = S.code;
   $('pUrl').textContent = location.host + location.pathname;
@@ -433,7 +450,7 @@ function renderProf() {
     const sec = duel ? S.profSecret : S.secret;
     $('pSecretBox').classList.toggle('hidden', sec === null);
     if (sec !== null) {
-      $('pSecretTitre').textContent = duel ? `Ton personnage (tu joues contre ${(S.players.find((p) => p.opp === 'prof') || {}).name || 'un élève'})` : 'Ton personnage secret';
+      $('pSecretTitre').textContent = duel ? `Ton personnage secret (${S.profName})` : 'Ton personnage secret';
       $('pSecretImg').innerHTML = drawChar(P[sec]); $('pSecretNom').textContent = P[sec].nom;
       $('pSecretWrap').classList.toggle('masque', profMasque);
       $('pMasque').textContent = profMasque ? '👁 Montrer' : '🙈 Masquer (si tu projettes)';
@@ -442,6 +459,9 @@ function renderProf() {
   }
 
   // Liste des élèves
+  renderProfJeu();
+  $('pVoir').classList.toggle('hidden', !duel);
+  $('pVoir').textContent = pVoir ? '🙈 Cacher les persos' : '👁 Voir les persos';
   $('pListeTitre').textContent = `Élèves (${nb}) · manche ${S.round}`;
   if (!nb) { $('pListe').innerHTML = `<p class="muted" style="font-size:1.5rem">Les élèves vont sur <b>${location.host}${location.pathname}</b> et tapent le code <b>${S.code}</b>.</p>`; return; }
   const sorted = [...S.players].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
@@ -450,12 +470,57 @@ function renderProf() {
     const warn = S.active && p.status === 'joue' && p.targetGone ? ` <span class="warn" title="Cet élève a éliminé le bon personnage : il a sûrement mal compris une réponse">⚠️ a éliminé le bon</span>` : '';
     const guess = p.status === 'perdu' && p.guess !== null ? ` (a dit ${P[p.guess].nom})` : '';
     return `<tr class="${p.connected ? '' : 'off'}"><td><b>${p.name}</b>${p.connected ? '' : ' 💤'}</td>
-      ${duel ? `<td>${S.active && p.secret !== null ? mini(p.secret) : ''}</td><td>${S.active && p.oppName ? 'vs ' + p.oppName : ''}</td>` : ''}
+      ${duel ? `<td>${!S.active || p.status === 'attente' ? '' : p.secret === null ? '🔒' : pVoir ? mini(p.secret) : '🙈'}</td><td>${S.active && p.oppName ? 'vs ' + p.oppName : ''}</td>` : ''}
       <td>${bar}</td><td class="st-${p.status}">${STATUS_TXT[p.status] || ''}${p.rank ? ' #' + p.rank : ''}${guess}${warn}</td>
       <td><b>${p.score}</b></td><td><button class="x" data-kick="${p.id}" title="Retirer">✕</button></td></tr>`;
   };
   $('pListe').innerHTML = `<table><tr><th>Élève</th>${duel ? '<th>Son perso</th><th>Adversaire</th>' : ''}<th>Restants</th><th>Statut</th><th>Pts</th><th></th></tr>${sorted.map(ligne).join('')}</table>`;
 }
+
+// ----- Le prof joue un duel contre l'élève seul -----
+let pVoir = false, profElimLocal = new Set(), profSynced = -1, profGuessing = false;
+function renderProfJeu() {
+  const enJeu = S.active && S.mode === 'duel' && S.profSecret !== null && S.profStatus;
+  $('pJeu').classList.toggle('hidden', !enJeu);
+  if (!enJeu) return;
+  if (S.round !== profSynced) { profElimLocal = new Set(S.profElim || []); profSynced = S.round; profGuessing = false; }
+  const adv = S.players.find((p) => p.opp === 'prof');
+  const joue = S.profStatus === 'joue';
+  $('pjTitre').textContent = `⚔️ ${S.profName} contre ${adv ? adv.name : '?'}`;
+  const rest = 24 - profElimLocal.size;
+  let info = `Il te reste <b>${rest}</b> personnage${rest > 1 ? 's' : ''}` + (adv ? ` · à ${adv.name} : <b>${adv.remaining}</b>` : '');
+  if (S.profStatus === 'gagne') info = `<b style="color:var(--green)">🎉 Tu as gagné !</b>`;
+  if (S.profStatus === 'perdu') info = `<b style="color:var(--red)">Perdu…</b>` + (S.profGuess !== null && S.profTarget !== S.profGuess ? ` Ce n'était pas ${P[S.profGuess].nom}.` : ` ${adv ? adv.name : "L'élève"} a trouvé ton personnage.`);
+  if (S.profStatus !== 'joue' && S.profTarget !== null) info += ` Son personnage était <b>${P[S.profTarget].nom}</b>.`;
+  $('pjInfo').innerHTML = info;
+  $('pjDevine').classList.toggle('hidden', !joue); $('pjRemettre').classList.toggle('hidden', !joue);
+  $('pjDevine').textContent = profGuessing ? '✋ Annuler' : '🎯 Je devine !';
+  $('pjDevine').className = profGuessing ? 'red' : 'green';
+  const g = $('pGrille');
+  g.classList.toggle('devine', profGuessing);
+  g.innerHTML = P.map((c) => `<div class="carte ${profElimLocal.has(c.id) ? 'out' : ''} ${S.profTarget === c.id ? 'pick' : ''}" data-id="${c.id}"><span class="zoom" data-zoom="${c.id}" title="Voir en grand">🔍</span>${drawChar(c)}<div class="nom">${c.nom}</div></div>`).join('');
+}
+$('pGrille').addEventListener('click', (e) => {
+  const z = e.target.closest('.zoom'); if (z) { zoom(+z.dataset.zoom); return; }
+  const card = e.target.closest('.carte'); if (!card || !S || S.profStatus !== 'joue') return;
+  const id = +card.dataset.id;
+  if (profGuessing) {
+    if (profElimLocal.has(id)) return;
+    $('modal').dataset.confirm = '1';
+    openModal(`<div style="font-size:1.8rem">Tu proposes…</div>${mini(id)}<div class="gros">${P[id].nom} ?</div>
+      <p style="font-size:1.4rem">Attention : si tu te trompes, tu perds la manche !</p>
+      <div class="row" style="justify-content:center"><button id="mNon">Non, attends</button><button class="green" id="mOui">Oui !</button></div>`);
+    $('mNon').onclick = () => { delete $('modal').dataset.confirm; closeModal(); };
+    $('mOui').onclick = () => { delete $('modal').dataset.confirm; profGuessing = false; closeModal(); send({ type:'qec_profGuess', id }); };
+    return;
+  }
+  if (profElimLocal.has(id)) profElimLocal.delete(id); else profElimLocal.add(id);
+  send({ type:'qec_profFlip', eliminated:[...profElimLocal] });
+  renderProfJeu();
+});
+$('pjDevine').onclick = () => { profGuessing = !profGuessing; renderProfJeu(); };
+$('pjRemettre').onclick = () => { profElimLocal.clear(); send({ type:'qec_profFlip', eliminated:[] }); renderProfJeu(); };
+$('pVoir').onclick = () => { pVoir = !pVoir; renderProf(); };
 
 $('pGrilleChoix').addEventListener('click', (e) => {
   const card = e.target.closest('.carte'); if (!card) return;
