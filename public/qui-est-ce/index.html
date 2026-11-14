@@ -33,9 +33,9 @@
   .modes label { display:block; font-size:1.55rem; margin:6px 0; cursor:pointer; }
 
   /* Cartes personnages */
-  .grille { display:grid; grid-template-columns:repeat(8, 1fr); gap:9px; }
-  @media (max-width:1000px) { .grille { grid-template-columns:repeat(6, 1fr); } }
-  @media (max-width:640px)  { .grille { grid-template-columns:repeat(4, 1fr); } }
+  .grille { display:grid; grid-template-columns:repeat(8, minmax(0,1fr)); gap:9px; }
+  @media (max-width:1000px) { .grille { grid-template-columns:repeat(6, minmax(0,1fr)); } }
+  @media (max-width:640px)  { .grille { grid-template-columns:repeat(4, minmax(0,1fr)); } }
   .carte { position:relative; background:#fff; border:2.5px solid var(--ink); border-radius:10px; padding:4px 2px 0; cursor:pointer;
            user-select:none; transition:transform .15s, filter .2s, opacity .2s; }
   .carte:hover { transform:translateY(-2px); }
@@ -46,7 +46,8 @@
   .zoom { position:absolute; top:5px; right:5px; background:rgba(255,255,255,.9); border:2px solid var(--ink); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:15px; z-index:2; }
   .zoom:hover { background:#fff7d6; }
   .zoomimg { max-height:75vh; max-width:100%; border-radius:10px; display:block; margin:0 auto; }
-  .carte .nom { text-align:center; font-size:1.45rem; font-weight:700; line-height:1.1; padding-bottom:2px; }
+  .carte { min-width:0; }
+  .carte .nom { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; font-size:1.45rem; font-weight:700; line-height:1.1; padding-bottom:2px; }
   .carte.out { background:#eee; }
   .carte.out svg, .carte.out .ph, .carte.out .nom { filter:grayscale(1); opacity:.3; }
   .carte.out::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -87,7 +88,7 @@
   .warn { color:#c77700; font-weight:700; }
   .off { opacity:.45; }
   .x { font-size:1.1rem; padding:0 8px; box-shadow:1px 2px 0 var(--ink); }
-  .cols { display:grid; grid-template-columns:330px 1fr; gap:16px; }
+  .cols { display:grid; grid-template-columns:400px minmax(0,1fr); gap:16px; }
   @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
   .secretprof { text-align:center; }
   .secretprof .grand { width:170px; margin:0 auto; background:#fff; border:3px solid var(--ink); border-radius:12px; }
@@ -202,7 +203,7 @@
           <h2 id="pChoixTitre">Prêt ?</h2>
           <div id="pChoixClasse" class="hidden">
             <p style="font-size:1.4rem;margin:2px 0">Choisis ton personnage secret (ou laisse le hasard) :</p>
-            <div class="grille" id="pGrilleChoix" style="grid-template-columns:repeat(6,1fr);gap:4px"></div>
+            <div class="grille" id="pGrilleChoix" style="grid-template-columns:repeat(6,minmax(0,1fr));gap:4px"></div>
             <p style="font-size:1.4rem" id="pChoixNom">🎲 Au hasard</p>
           </div>
           <button id="pShuffle" style="width:100%;margin-top:8px;font-size:1.3rem">🔀 Tirer d'autres personnages</button>
