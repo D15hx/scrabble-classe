@@ -40,14 +40,15 @@
            user-select:none; transition:transform .15s, filter .2s, opacity .2s; }
   .carte:hover { transform:translateY(-2px); }
   .carte svg, .carte img.photo { display:block; width:100%; height:auto; }
-  img.photo { aspect-ratio:2/3; object-fit:cover; border-radius:6px; background:#ddd; }
+  .ph { position:relative; width:100%; padding-top:150%; border-radius:6px; overflow:hidden; background:#ddd; }
+  .ph img.photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .carte { padding:3px 3px 0; }
   .zoom { position:absolute; top:5px; right:5px; background:rgba(255,255,255,.9); border:2px solid var(--ink); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:15px; z-index:2; }
   .zoom:hover { background:#fff7d6; }
   .zoomimg { max-height:75vh; max-width:100%; border-radius:10px; display:block; margin:0 auto; }
   .carte .nom { text-align:center; font-size:1.45rem; font-weight:700; line-height:1.1; padding-bottom:2px; }
   .carte.out { background:#eee; }
-  .carte.out svg, .carte.out img.photo, .carte.out .nom { filter:grayscale(1); opacity:.3; }
+  .carte.out svg, .carte.out .ph, .carte.out .nom { filter:grayscale(1); opacity:.3; }
   .carte.out::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
                       font-size:5.5rem; color:var(--red); font-family:Arial,sans-serif; }
   .carte.pick { outline:4px solid var(--green); }
@@ -248,7 +249,7 @@ const photoUrl = (pi, w) => {
 };
 const boardToChars = (board) => (board || []).map((pi, b) => ({ id: b, pi, nom: QEC_PHOTOS[pi][3] }));
 function drawChar(c, big) {
-  return `<img class="photo" src="${photoUrl(c.pi, big ? 700 : 320)}" alt="${c.nom}" loading="lazy" draggable="false">`;
+  return `<div class="ph"><img class="photo" src="${photoUrl(c.pi, big ? 700 : 320)}" alt="${c.nom}" loading="lazy" draggable="false"></div>`;
 }
 
 // =====================================================================
