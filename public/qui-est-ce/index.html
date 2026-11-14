@@ -39,23 +39,28 @@
   .carte { position:relative; background:#fff; border:2.5px solid var(--ink); border-radius:10px; padding:4px 2px 0; cursor:pointer;
            user-select:none; transition:transform .15s, filter .2s, opacity .2s; }
   .carte:hover { transform:translateY(-2px); }
-  .carte svg { display:block; width:100%; height:auto; }
+  .carte svg, .carte img.photo { display:block; width:100%; height:auto; }
+  img.photo { aspect-ratio:2/3; object-fit:cover; border-radius:6px; background:#ddd; }
+  .carte { padding:3px 3px 0; }
+  .zoom { position:absolute; top:5px; right:5px; background:rgba(255,255,255,.9); border:2px solid var(--ink); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:15px; z-index:2; }
+  .zoom:hover { background:#fff7d6; }
+  .zoomimg { max-height:75vh; max-width:100%; border-radius:10px; display:block; margin:0 auto; }
   .carte .nom { text-align:center; font-size:1.45rem; font-weight:700; line-height:1.1; padding-bottom:2px; }
   .carte.out { background:#eee; }
-  .carte.out svg, .carte.out .nom { filter:grayscale(1); opacity:.3; }
+  .carte.out svg, .carte.out img.photo, .carte.out .nom { filter:grayscale(1); opacity:.3; }
   .carte.out::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
                       font-size:5.5rem; color:var(--red); font-family:Arial,sans-serif; }
   .carte.pick { outline:4px solid var(--green); }
   .devine .carte:not(.out) { animation:pulse 1s infinite; border-color:var(--green); }
   @keyframes pulse { 50% { box-shadow:0 0 0 4px rgba(47,155,85,.35); } }
-  .mini { display:inline-block; width:46px; vertical-align:middle; background:#fff; border:2px solid var(--ink); border-radius:6px; }
-  .mini svg { display:block; width:100%; }
+  .mini { display:inline-block; width:40px; vertical-align:middle; background:#fff; border:2px solid var(--ink); border-radius:6px; }
+  .mini svg, .mini img { display:block; width:100%; border-radius:4px; }
 
   /* Élève */
   .bandeau { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; margin-bottom:14px; }
   .secret { display:flex; gap:14px; align-items:center; background:#fff7d6; border:3px dashed #c9a227; border-radius:14px; padding:8px 16px; }
   .secret .grand { width:110px; background:#fff; border:2.5px solid var(--ink); border-radius:10px; }
-  .secret .grand svg { display:block; width:100%; }
+  .secret .grand svg, .secret .grand img { display:block; width:100%; border-radius:8px; }
   .secret .titre { font-size:1.5rem; }
   .secret .nomsecret { font-size:2.6rem; font-weight:700; color:var(--red); line-height:1; }
   .infos { flex:1; min-width:240px; display:flex; flex-direction:column; justify-content:center; gap:6px; font-size:1.6rem; }
@@ -67,7 +72,7 @@
   .aide li { margin:2px 0; break-inside:avoid; }
 
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
-  .overlay .board { max-width:460px; text-align:center; }
+  .overlay .board { max-width:560px; text-align:center; }
   .overlay .board .mini { width:120px; }
   .resultat { font-size:3rem; font-weight:700; }
 
@@ -85,7 +90,7 @@
   @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
   .secretprof { text-align:center; }
   .secretprof .grand { width:170px; margin:0 auto; background:#fff; border:3px solid var(--ink); border-radius:12px; }
-  .secretprof .grand svg { display:block; width:100%; }
+  .secretprof .grand svg, .secretprof .grand img { display:block; width:100%; border-radius:10px; }
   .secretprof .nomsecret { font-size:3rem; font-weight:700; color:var(--red); }
   .masque { filter:blur(18px); }
   .statut { position:fixed; bottom:8px; right:12px; font-size:1.2rem; background:#fff; border:2px solid var(--ink); border-radius:8px; padding:0 8px; }
@@ -152,18 +157,19 @@
       <details class="aide">
         <summary>💬 Aide pour poser tes questions</summary>
         <ul>
-          <li>Est-ce que c'est <b>une fille</b> ? <b>un garçon</b> ?</li>
-          <li>Est-ce qu'il / elle a <b>les cheveux blonds</b> ? <b>bruns</b> ? <b>roux</b> ? <b>noirs</b> ? <b>gris</b> ?</li>
-          <li>Est-ce qu'il / elle a <b>les cheveux courts</b> ? <b>longs</b> ?</li>
-          <li>Est-ce qu'il est <b>chauve</b> ?</li>
-          <li>Est-ce qu'il a <b>une barbe</b> ?</li>
-          <li>Est-ce qu'il / elle porte <b>des lunettes</b> ?</li>
-          <li>… <b>un bonnet</b> ? <b>un chapeau</b> ? <b>une casquette</b> ?</li>
+          <li>Est-ce que c'est <b>une femme</b> ? <b>un homme</b> ?</li>
+          <li>Est-ce qu'il / elle est <b>jeune</b> ? <b>âgé(e)</b> ?</li>
+          <li>Est-ce qu'il / elle a <b>les cheveux longs</b> ? <b>courts</b> ? <b>bouclés</b> ? <b>blonds</b> ? <b>bruns</b> ? <b>roux</b> ? <b>blancs</b> ?</li>
+          <li>Est-ce qu'il est <b>chauve</b> ? Est-ce qu'il a <b>une barbe</b> ? <b>une moustache</b> ?</li>
+          <li>Est-ce qu'il / elle porte <b>des lunettes</b> ? <b>des lunettes de soleil</b> ?</li>
+          <li>… <b>un bonnet</b> ? <b>un chapeau</b> ? <b>une casquette</b> ? <b>un foulard</b> ?</li>
+          <li>… <b>un manteau</b> ? <b>une veste</b> ? <b>un pull</b> ? <b>un t-shirt</b> ? <b>une chemise</b> ? <b>un costume</b> ?</li>
+          <li>… <b>un jean</b> ? <b>un pantalon</b> ? <b>une jupe</b> ? <b>une robe</b> ? <b>un short</b> ?</li>
+          <li>… <b>des baskets</b> ? <b>des bottes</b> ? <b>des chaussures à talons</b> ?</li>
           <li>… <b>une écharpe</b> ? <b>des gants</b> ? <b>une ceinture</b> ?</li>
-          <li>… <b>des bottes</b> ? <b>une jupe</b> ? <b>un pantalon</b> ?</li>
-          <li>… <b>des boucles d'oreilles</b> ?</li>
-          <li>Est-ce qu'il / elle a <b>un parapluie</b> ?</li>
-          <li>Est-ce que son pull est <b>rouge</b> ? <b>bleu</b> ? <b>vert</b> ? <b>jaune</b> ? <b>violet</b> ?</li>
+          <li>Est-ce qu'il / elle a <b>un sac</b> ? <b>un sac à dos</b> ? <b>un parapluie</b> ?</li>
+          <li>Est-ce que son manteau est <b>noir</b> ? <b>beige</b> ? <b>rouge</b> ? <b>bleu</b> ?…</li>
+          <li>Est-ce qu'il / elle est <b>dans la rue</b> ? <b>dans la neige</b> ? <b>dans la nature</b> ?</li>
         </ul>
         <div class="muted">On répond seulement par <b>Oui</b> ou par <b>Non</b> !</div>
       </details>
@@ -198,6 +204,7 @@
             <div class="grille" id="pGrilleChoix" style="grid-template-columns:repeat(6,1fr);gap:4px"></div>
             <p style="font-size:1.4rem" id="pChoixNom">🎲 Au hasard</p>
           </div>
+          <button id="pShuffle" style="width:100%;margin-top:8px;font-size:1.3rem">🔀 Tirer d'autres personnages</button>
           <button class="green" id="pStart" style="width:100%;margin-top:8px">▶ Lancer la manche</button>
         </div>
         <div id="pEnJeu" class="hidden">
@@ -228,103 +235,20 @@
 <div id="modal" class="overlay hidden"><div class="board" id="modalBox"></div></div>
 <div class="statut" id="statut">connexion…</div>
 
+<script src="photos.js"></script>
 <script>
 // =====================================================================
-//  PERSONNAGES
+//  PERSONNAGES (photos Pexels, voir photos.js)
 // =====================================================================
-// s:sexe h:cheveux l:longueur(c court/l long/x chauve) lu:lunettes t:tête(bonnet/chapeau/casquette)
-// e:écharpe g:gants ce:ceinture b:bottes p:parapluie ba:barbe bo:boucles pu:pull peau ju:jupe
-const P = [
-  ['Léa','F','blond','l',0,'bonnet',1,1,0,1,0,0,0,'rouge',1,0],
-  ['Chloé','F','brun','l',1,'',0,0,1,0,1,0,1,'bleu',2,1],
-  ['Inès','F','noir','l',0,'chapeau',0,0,1,1,0,0,1,'vert',3,0],
-  ['Manon','F','roux','c',1,'',1,0,0,0,0,0,0,'jaune',1,1],
-  ['Camille','F','blond','c',0,'casquette',0,1,1,0,0,0,0,'violet',2,0],
-  ['Sarah','F','brun','c',0,'',0,0,0,1,1,0,1,'rouge',3,1],
-  ['Zoé','F','roux','l',0,'bonnet',0,0,1,0,0,0,0,'bleu',1,0],
-  ['Jade','F','noir','c',1,'chapeau',1,1,0,1,0,0,0,'rouge',2,0],
-  ['Louise','F','gris','l',1,'',1,0,0,0,1,0,1,'violet',1,1],
-  ['Amira','F','noir','l',0,'',0,1,1,1,0,0,0,'jaune',4,0],
-  ['Nina','F','brun','l',0,'bonnet',1,0,0,0,0,0,1,'vert',4,1],
-  ['Clara','F','blond','l',1,'casquette',0,0,1,1,0,0,0,'vert',2,0],
-  ['Hugo','M','blond','c',0,'',1,0,1,0,0,0,0,'vert',1,0],
-  ['Lucas','M','brun','c',1,'casquette',0,0,0,1,0,0,0,'rouge',2,0],
-  ['Nathan','M','noir','c',0,'bonnet',1,1,0,1,0,1,0,'bleu',4,0],
-  ['Karim','M','noir','c',0,'',0,0,1,0,1,1,0,'jaune',3,0],
-  ['Tom','M','roux','c',1,'',0,1,0,0,0,0,0,'violet',1,0],
-  ['Léo','M','blond','l',0,'chapeau',0,0,1,1,0,0,0,'bleu',2,0],
-  ['Mathis','M','brun','l',0,'',1,0,0,0,1,0,0,'rouge',3,0],
-  ['Adam','M','gris','x',1,'',0,0,1,0,0,1,0,'bleu',2,0],
-  ['Paul','M','gris','c',0,'chapeau',1,1,1,1,1,1,0,'vert',1,0],
-  ['Yanis','M','noir','c',0,'casquette',0,0,0,0,0,0,0,'violet',3,0],
-  ['Théo','M','roux','l',0,'bonnet',0,0,0,1,0,0,0,'jaune',1,0],
-  ['Victor','M','brun','x',0,'',0,1,0,0,0,1,0,'jaune',4,0],
-].map((r, i) => ({ id:i, nom:r[0], s:r[1], h:r[2], l:r[3], lu:r[4], t:r[5], e:r[6], g:r[7], ce:r[8], b:r[9], p:r[10], ba:r[11], bo:r[12], pu:r[13], peau:r[14], ju:r[15] }));
-
-const SKIN = ['', '#f8dcc8', '#eab892', '#c48a5e', '#8a5636'];
-const HAIR = { blond:'#f0c84a', brun:'#7b4a24', roux:'#d4622a', noir:'#2a2a2a', gris:'#c9c9c9' };
-const TOP  = { rouge:'#e5483b', bleu:'#3b7dd8', vert:'#3aa35a', jaune:'#f2c418', violet:'#8e5bd1' };
-const HATC = ['#e5483b', '#2e86c1', '#27ae60', '#8e44ad', '#f39c12', '#16a085'];
-const UMB  = ['#16a085', '#e67e22', '#c0392b', '#2980b9', '#8e44ad', '#27ae60'];
-const svgCache = {};
-
-function drawChar(c) {
-  if (svgCache[c.id]) return svgCache[c.id];
-  const sk = SKIN[c.peau], hc = HAIR[c.h], tc = TOP[c.pu], k = '#2d2d2d';
-  const hat = HATC[c.id % HATC.length], umb = UMB[c.id % UMB.length];
-  const scarfC = c.pu === 'rouge' || c.pu === 'violet' ? '#2e86c1' : '#e5483b';
-  let s = `<svg viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg" stroke="${k}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round">`;
-  // cheveux longs (derrière)
-  if (c.l === 'l') s += c.s === 'F'
-    ? `<path d="M33,34 Q29,62 35,72 L65,72 Q71,62 67,34 Z" fill="${hc}"/>`
-    : `<path d="M34,34 Q32,52 36,60 L64,60 Q68,52 66,34 Z" fill="${hc}"/>`;
-  // jambes / pantalon / jupe
-  if (c.ju) {
-    s += `<rect x="40" y="114" width="7" height="26" fill="${sk}"/><rect x="53" y="114" width="7" height="26" fill="${sk}"/>`;
-    s += `<path d="M35,98 L65,98 L71,121 L29,121 Z" fill="#34407a"/>`;
-  } else {
-    s += `<rect x="37.5" y="99" width="11" height="40" rx="2" fill="#3b4a63"/><rect x="51.5" y="99" width="11" height="40" rx="2" fill="#3b4a63"/>`;
-  }
-  // chaussures ou bottes
-  if (c.b) s += `<path d="M37,121 h12 v21 h-15 q-3,0 -3,-3 q0,-3 6,-3 Z" fill="#7a4520"/><path d="M51,121 h12 v15 q6,0 6,3 q0,3 -3,3 h-15 Z" fill="#7a4520"/><line x1="37" y1="125" x2="49" y2="125" stroke="#b07040"/><line x1="51" y1="125" x2="63" y2="125" stroke="#b07040"/>`;
-  else s += `<ellipse cx="41" cy="141" rx="8" ry="3.8" fill="#3a2a1e"/><ellipse cx="59" cy="141" rx="8" ry="3.8" fill="#3a2a1e"/>`;
-  // corps (pull)
-  s += `<path d="M31,61 Q50,54 69,61 L66,101 L34,101 Z" fill="${tc}"/>`;
-  // ceinture
-  if (c.ce) s += `<rect x="33.5" y="94" width="33" height="6" fill="#5a3412"/><rect x="46.5" y="93.3" width="7" height="7.4" rx="1" fill="none" stroke="#e6b800" stroke-width="1.8"/>`;
-  // parapluie (fermé, tenu à la main droite)
-  if (c.p) s += `<path d="M80,106 L87,140 L80,146 L73,140 Z" fill="${umb}"/><line x1="80" y1="106" x2="80" y2="146" stroke-width="0.9"/><line x1="80" y1="146" x2="80" y2="152" stroke="#555" stroke-width="2"/><path d="M80,106 L80,96 Q80,90 75,90 Q71,90 71,95" fill="none" stroke="#555" stroke-width="2.4"/>`;
-  // bras
-  s += `<rect x="24" y="61" width="9" height="39" rx="4.5" fill="${tc}" transform="rotate(6 28 61)"/><rect x="67" y="61" width="9" height="39" rx="4.5" fill="${tc}" transform="rotate(-6 72 61)"/>`;
-  // mains ou gants
-  if (c.g) s += `<circle cx="24.5" cy="101" r="5.6" fill="#1f3a5f"/><circle cx="75.5" cy="101" r="5.6" fill="#1f3a5f"/><path d="M20.5,96.5 h8 M71.5,96.5 h8" stroke="#fff" stroke-width="1.6"/>`;
-  else s += `<circle cx="24.5" cy="101" r="4.4" fill="${sk}"/><circle cx="75.5" cy="101" r="4.4" fill="${sk}"/>`;
-  // cou, oreilles, tête
-  s += `<rect x="45" y="48" width="10" height="11" fill="${sk}"/>`;
-  s += `<circle cx="35" cy="38" r="3.4" fill="${sk}"/><circle cx="65" cy="38" r="3.4" fill="${sk}"/>`;
-  s += `<circle cx="50" cy="36" r="15" fill="${sk}"/>`;
-  // barbe
-  if (c.ba) s += `<path d="M35.5,37 Q36,54 50,55 Q64,54 64.5,37 Q61,46 50,46.5 Q39,46 35.5,37 Z" fill="${hc}"/>`;
-  // visage
-  s += `<circle cx="44.5" cy="36" r="1.9" fill="${k}" stroke="none"/><circle cx="55.5" cy="36" r="1.9" fill="${k}" stroke="none"/>`;
-  s += `<circle cx="41" cy="42" r="2.4" fill="#ff8a80" opacity=".35" stroke="none"/><circle cx="59" cy="42" r="2.4" fill="#ff8a80" opacity=".35" stroke="none"/>`;
-  s += `<path d="M45.5,43 Q50,47 54.5,43" fill="none" stroke="${c.ba ? '#fff' : k}"/>`;
-  // cheveux (dessus)
-  if (c.l === 'x') s += `<ellipse cx="36.5" cy="31" rx="2.6" ry="4.5" fill="${hc}"/><ellipse cx="63.5" cy="31" rx="2.6" ry="4.5" fill="${hc}"/>`;
-  else if (c.l === 'c') s += `<path d="M35,35 Q34,19 50,19 Q66,19 65,35 Q63,27 56,26 Q50,29 43,26 Q37,27 35,35 Z" fill="${hc}"/>`;
-  else s += `<path d="M34.5,40 Q32,19 50,19 Q68,19 65.5,40 Q63,28 55,25 Q46,30 38,27 Q35.5,31 34.5,40 Z" fill="${hc}"/>`;
-  // boucles d'oreilles
-  if (c.bo) s += `<circle cx="35" cy="43.5" r="2.1" fill="#f1c40f"/><circle cx="65" cy="43.5" r="2.1" fill="#f1c40f"/>`;
-  // lunettes
-  if (c.lu) s += `<circle cx="44.5" cy="36" r="5" fill="#fff" fill-opacity=".25" stroke-width="1.6"/><circle cx="55.5" cy="36" r="5" fill="#fff" fill-opacity=".25" stroke-width="1.6"/><line x1="49.5" y1="36" x2="50.5" y2="36" stroke-width="1.6"/><line x1="39.5" y1="35" x2="36" y2="34" stroke-width="1.4"/><line x1="60.5" y1="35" x2="64" y2="34" stroke-width="1.4"/>`;
-  // écharpe
-  if (c.e) s += `<path d="M39,51 Q50,58 61,51 L62.5,58 Q50,65 37.5,58 Z" fill="${scarfC}"/><path d="M53,59 L60,58 L61,80 L54,81 Z" fill="${scarfC}"/><path d="M53.6,66 L60.4,65.3 M54.1,72 L60.7,71.4" stroke="#fff" stroke-width="2"/><path d="M54,81 l0,3 M56.5,80.7 l0,3 M59,80.4 l0,3" stroke="${scarfC}" stroke-width="1.5"/>`;
-  // couvre-chef
-  if (c.t === 'bonnet') s += `<path d="M34,30 Q34,12 50,12 Q66,12 66,30 Z" fill="${hat}"/><rect x="32.5" y="25.5" width="35" height="7" rx="3.5" fill="${hat}"/><path d="M36,27 v4 M40,27 v4 M44,27 v4 M48,27 v4 M52,27 v4 M56,27 v4 M60,27 v4 M64,27 v4" stroke="#fff" stroke-width="1" opacity=".7"/><circle cx="50" cy="10.5" r="4.5" fill="#fff"/>`;
-  else if (c.t === 'chapeau') s += `<ellipse cx="50" cy="26.5" rx="23" ry="4.5" fill="#4a3426"/><path d="M38,26 L39,10 Q50,7 61,10 L62,26 Z" fill="#4a3426"/><rect x="38.4" y="20" width="23.2" height="4.5" fill="${hat}"/>`;
-  else if (c.t === 'casquette') s += `<path d="M35,28 Q35,14 50,14 Q65,14 65,28 Z" fill="${hat}"/><path d="M48,25 Q68,22 79,28.5 Q66,31.5 48,29 Z" fill="${hat}"/><circle cx="50" cy="14.5" r="1.6" fill="${hat}"/>`;
-  s += `</svg>`;
-  return (svgCache[c.id] = s);
+// P = les 24 personnages du plateau de la manche en cours (id = position 0..23)
+let P = [], PN = [];
+const photoUrl = (pi, w) => {
+  const [id, f] = QEC_PHOTOS[pi];
+  return `https://images.pexels.com/photos/${id}/${f || 'pexels-photo-' + id + '.jpeg'}?auto=compress&cs=tinysrgb&w=${w}`;
+};
+const boardToChars = (board) => (board || []).map((pi, b) => ({ id: b, pi, nom: QEC_PHOTOS[pi][3] }));
+function drawChar(c, big) {
+  return `<img class="photo" src="${photoUrl(c.pi, big ? 700 : 320)}" alt="${c.nom}" loading="lazy" draggable="false">`;
 }
 
 // =====================================================================
@@ -352,7 +276,7 @@ function connect() {
     if (m.type === 'qec_joined') { sessionStorage.setItem('qec_eleve', JSON.stringify({ code:m.code, name:m.name, key:m.key })); }
     if (m.type === 'qec_error') { $('errEleve').textContent = m.msg; if (m.reset) sessionStorage.removeItem('qec_eleve'); show('accueil'); }
     if (m.type === 'qec_reset') { sessionStorage.removeItem('qec_prof'); sessionStorage.removeItem('qec_eleve'); $('errEleve').textContent = m.msg || ''; show('accueil'); }
-    if (m.type === 'qec_state') { S = m; role = m.role; render(); }
+    if (m.type === 'qec_state') { S = m; role = m.role; P = boardToChars(m.board); PN = boardToChars(m.nextBoard); render(); }
   };
 }
 const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
@@ -425,12 +349,13 @@ function renderEleve() {
 
   const g = $('eGrille');
   g.classList.toggle('devine', guessing);
-  g.innerHTML = P.map((c) => `<div class="carte ${localElim.has(c.id) ? 'out' : ''}" data-id="${c.id}">${drawChar(c)}<div class="nom">${c.nom}</div></div>`).join('');
+  g.innerHTML = P.map((c) => `<div class="carte ${localElim.has(c.id) ? 'out' : ''}" data-id="${c.id}"><span class="zoom" data-zoom="${c.id}" title="Voir en grand">🔍</span>${drawChar(c)}<div class="nom">${c.nom}</div></div>`).join('');
 
   if (me.status !== 'joue') showResult(); else if (!$('modal').dataset.confirm) closeModal();
 }
 
 $('eGrille').addEventListener('click', (e) => {
+  const z = e.target.closest('.zoom'); if (z) { zoom(+z.dataset.zoom); return; }
   const card = e.target.closest('.carte'); if (!card || !S || S.me.status !== 'joue') return;
   const id = +card.dataset.id;
   if (guessing) { if (!localElim.has(id)) confirmGuess(id); return; }
@@ -441,6 +366,14 @@ $('eGrille').addEventListener('click', (e) => {
 $('btnDevine').onclick = () => { guessing = !guessing; renderEleve(); };
 $('btnToutRemettre').onclick = () => { localElim.clear(); send({ type:'qec_flip', eliminated:[] }); renderEleve(); };
 $('btnCache').onclick = () => { secretCache = !secretCache; renderEleve(); };
+
+function zoom(id) {
+  $('modal').dataset.confirm = '1';
+  openModal(`<img class="zoomimg" src="${photoUrl(P[id].pi, 900)}" alt="${P[id].nom}"><div class="gros">${P[id].nom}</div>
+    <button id="mFerme">Fermer</button>`);
+  $('mFerme').onclick = () => { delete $('modal').dataset.confirm; closeModal(); };
+}
+$('modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && $('mFerme')) $('mFerme').click(); });
 
 function confirmGuess(id) {
   $('modal').dataset.confirm = '1';
@@ -490,8 +423,8 @@ function renderProf() {
   $('pChoixClasse').classList.toggle('hidden', duel);
   $('pStart').disabled = co === 0;
   if (!duel && !S.active) {
-    $('pGrilleChoix').innerHTML = P.map((c) => `<div class="carte ${pChoix === c.id ? 'pick' : ''}" data-id="${c.id}" style="padding:1px">${drawChar(c)}<div class="nom" style="font-size:1rem">${c.nom}</div></div>`).join('');
-    $('pChoixNom').textContent = pChoix === null ? '🎲 Au hasard (clique sur un personnage pour le choisir)' : `✅ Tu as choisi : ${P[pChoix].nom}`;
+    $('pGrilleChoix').innerHTML = PN.map((c) => `<div class="carte ${pChoix === c.id ? 'pick' : ''}" data-id="${c.id}" style="padding:1px">${drawChar(c)}<div class="nom" style="font-size:1rem">${c.nom}</div></div>`).join('');
+    $('pChoixNom').textContent = pChoix === null ? '🎲 Au hasard (clique sur un personnage pour le choisir)' : `✅ Tu as choisi : ${PN[pChoix].nom}`;
   }
 
   if (S.active) {
@@ -534,6 +467,7 @@ $('pNext').onclick = () => send(S.mode === 'classe' ? { type:'qec_stop' } : { ty
 $('pReveal').onclick = () => send({ type:'qec_reveal' });
 $('pStop').onclick = () => send({ type:'qec_stop' });
 $('pRaz').onclick = () => { if (confirm('Remettre tous les scores à 0 ?')) send({ type:'qec_resetScores' }); };
+$('pShuffle').onclick = () => { pChoix = null; send({ type:'qec_shuffle' }); };
 $('pMasque').onclick = () => { profMasque = !profMasque; renderProf(); };
 $('pListe').addEventListener('click', (e) => {
   const b = e.target.closest('[data-kick]'); if (!b) return;
