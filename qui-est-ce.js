@@ -6,8 +6,18 @@
 //  Tous les messages de ce jeu commencent par "qec_" : les autres jeux ne sont pas touchés.
 // ============================================================
 
-const NB_PERSOS = 24;
+const NB_PERSOS = 24; // personnages par plateau
+let POOL = 228;       // taille du stock de photos
+try { POOL = require('./public/qui-est-ce/photos.js').length; } catch (e) { console.warn('[qui-est-ce] photos.js introuvable, stock =', POOL); }
 const rooms = new Map();
+
+// Tire 24 photos du stock en évitant celles déjà jouées dans cette partie
+function makeBoard(room, avoid = []) {
+  let free = [];
+  for (let i = 0; i < POOL; i++) if (!room.used.has(i) && !avoid.includes(i)) free.push(i);
+  if (free.length < NB_PERSOS) { room.used.clear(); free = []; for (let i = 0; i < POOL; i++) if (!avoid.includes(i)) free.push(i); }
+  return shuffle(free).slice(0, NB_PERSOS);
+}
 
 function makeCode() {
   const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -54,7 +64,9 @@ function handle(ws, d) {
       code, profKey: rid(), profWs: ws, mode: d.mode === 'classe' ? 'classe' : 'duel',
       players: new Map(), round: 0, active: false, revealed: false,
       secret: null, profSecret: null, winners: 0, last: Date.now(),
+      used: new Set(), board: [], nextBoard: [],
     };
+    room.nextBoard = makeBoard(room);
     rooms.set(code, room);
     ws._qec = { code, role: 'prof' };
     send(ws, { type: 'qec_created', code, key: room.profKey });
@@ -102,6 +114,7 @@ function handle(ws, d) {
     if (d.type === 'qec_mode' && !room.active) { room.mode = d.mode === 'classe' ? 'classe' : 'duel'; return broadcast(room); }
     if (d.type === 'qec_kick') { const p = room.players.get(d.id); if (p) { send(p.ws, { type: 'qec_reset', msg: 'Le prof t\'a retiré de la partie.' }); room.players.delete(d.id); fixPairsAfterLeave(room, d.id); } return broadcast(room); }
     if (d.type === 'qec_start') return startRound(room, d.secret);
+    if (d.type === 'qec_shuffle' && !room.active) { room.nextBoard = makeBoard(room, room.nextBoard); return broadcast(room); }
     if (d.type === 'qec_reveal') {
       room.revealed = true;
       for (const p of room.players.values()) if (p.status === 'joue') p.status = 'fini';
@@ -139,6 +152,9 @@ function handle(ws, d) {
 
 function startRound(room, chosen) {
   room.round++; room.active = true; room.revealed = false; room.winners = 0; room.profSecret = null;
+  room.board = room.nextBoard.length === NB_PERSOS ? room.nextBoard : makeBoard(room);
+  room.board.forEach((i) => room.used.add(i));
+  room.nextBoard = makeBoard(room);
   const list = [...room.players.values()];
   for (const p of list) { p.eliminated = []; p.guess = null; p.rank = 0; p.why = null; p.secret = null; p.opp = null; p.status = 'attente'; }
   if (room.mode === 'classe') {
@@ -181,6 +197,7 @@ function broadcast(room) {
   send(room.profWs, {
     type: 'qec_state', role: 'prof', code: room.code, mode: room.mode, round: room.round,
     active: room.active, revealed: room.revealed, secret: room.secret, profSecret: room.profSecret,
+    board: room.board, nextBoard: room.nextBoard,
     players: players.map((p) => {
       const t = room.active ? targetOf(room, p) : null;
       return {
@@ -197,7 +214,7 @@ function broadcast(room) {
     const done = p.status !== 'joue';
     send(p.ws, {
       type: 'qec_state', role: 'eleve', code: room.code, mode: room.mode, round: room.round,
-      active: room.active, revealed: room.revealed,
+      active: room.active, revealed: room.revealed, board: room.board,
       me: { name: p.name, score: p.score, status: p.status, why: p.why, rank: p.rank, secret: p.secret, eliminated: p.eliminated, guess: p.guess },
       opp: p.opp ? { name: oppName(p), remaining: o ? remaining(o) : null } : null,
       target: room.active && (done || room.revealed) && p.status !== 'attente' ? targetOf(room, p) : null,
