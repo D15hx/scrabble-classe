@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qui est-ce ?</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#2d2d2d; --blue:#2e6fd0; --red:#d8443a; --green:#2f9b55; --board:#fdfdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Caveat',cursive; color:var(--ink); background:#e9e4d8;
+         background-image:radial-gradient(#d9d2c2 1px, transparent 1px); background-size:18px 18px; min-height:100vh; }
+  .wrap { max-width:1250px; margin:0 auto; padding:14px; }
+  .board { background:var(--board); border:3px solid #9c8f78; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); padding:18px; }
+  h1 { font-size:3.2rem; margin:0 0 6px; text-align:center; color:var(--blue); }
+  h2 { font-size:2rem; margin:6px 0; }
+  .hidden { display:none !important; }
+  button { font-family:'Caveat',cursive; font-size:1.5rem; font-weight:700; border:2.5px solid var(--ink); border-radius:12px;
+           padding:6px 18px; background:#fff; cursor:pointer; box-shadow:2px 3px 0 var(--ink); transition:transform .08s; }
+  button:hover { transform:translateY(-1px); }
+  button:active { transform:translateY(2px); box-shadow:0 1px 0 var(--ink); }
+  button.blue { background:var(--blue); color:#fff; } button.red { background:var(--red); color:#fff; } button.green { background:var(--green); color:#fff; }
+  button:disabled { opacity:.45; cursor:default; transform:none; }
+  input { font-family:'Caveat',cursive; font-size:1.8rem; padding:4px 12px; border:2.5px solid var(--ink); border-radius:10px; width:100%; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .center { text-align:center; }
+  .muted { color:#7b7366; }
+  .err { color:var(--red); font-size:1.5rem; min-height:1.8rem; }
+
+  /* Accueil */
+  .choix { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+  .choix .board { width:340px; }
+  .modes label { display:block; font-size:1.55rem; margin:6px 0; cursor:pointer; }
+
+  /* Cartes personnages */
+  .grille { display:grid; grid-template-columns:repeat(8, 1fr); gap:9px; }
+  @media (max-width:1000px) { .grille { grid-template-columns:repeat(6, 1fr); } }
+  @media (max-width:640px)  { .grille { grid-template-columns:repeat(4, 1fr); } }
+  .carte { position:relative; background:#fff; border:2.5px solid var(--ink); border-radius:10px; padding:4px 2px 0; cursor:pointer;
+           user-select:none; transition:transform .15s, filter .2s, opacity .2s; }
+  .carte:hover { transform:translateY(-2px); }
+  .carte svg { display:block; width:100%; height:auto; }
+  .carte .nom { text-align:center; font-size:1.45rem; font-weight:700; line-height:1.1; padding-bottom:2px; }
+  .carte.out { background:#eee; }
+  .carte.out svg, .carte.out .nom { filter:grayscale(1); opacity:.3; }
+  .carte.out::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+                      font-size:5.5rem; color:var(--red); font-family:Arial,sans-serif; }
+  .carte.pick { outline:4px solid var(--green); }
+  .devine .carte:not(.out) { animation:pulse 1s infinite; border-color:var(--green); }
+  @keyframes pulse { 50% { box-shadow:0 0 0 4px rgba(47,155,85,.35); } }
+  .mini { display:inline-block; width:46px; vertical-align:middle; background:#fff; border:2px solid var(--ink); border-radius:6px; }
+  .mini svg { display:block; width:100%; }
+
+  /* Élève */
+  .bandeau { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; margin-bottom:14px; }
+  .secret { display:flex; gap:14px; align-items:center; background:#fff7d6; border:3px dashed #c9a227; border-radius:14px; padding:8px 16px; }
+  .secret .grand { width:110px; background:#fff; border:2.5px solid var(--ink); border-radius:10px; }
+  .secret .grand svg { display:block; width:100%; }
+  .secret .titre { font-size:1.5rem; }
+  .secret .nomsecret { font-size:2.6rem; font-weight:700; color:var(--red); line-height:1; }
+  .infos { flex:1; min-width:240px; display:flex; flex-direction:column; justify-content:center; gap:6px; font-size:1.6rem; }
+  .gros { font-size:2.2rem; font-weight:700; }
+  .compteur { font-size:1.6rem; }
+  .aide { margin-top:14px; font-size:1.4rem; }
+  .aide summary { cursor:pointer; font-size:1.7rem; font-weight:700; color:var(--blue); }
+  .aide ul { columns:2; margin:6px 0; } @media (max-width:700px) { .aide ul { columns:1; } }
+  .aide li { margin:2px 0; break-inside:avoid; }
+
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .overlay .board { max-width:460px; text-align:center; }
+  .overlay .board .mini { width:120px; }
+  .resultat { font-size:3rem; font-weight:700; }
+
+  /* Prof */
+  .code { font-size:4rem; font-weight:700; letter-spacing:8px; color:var(--red); }
+  table { width:100%; border-collapse:collapse; font-size:1.55rem; }
+  th, td { border-bottom:2px dashed #cfc6b4; padding:4px 8px; text-align:left; vertical-align:middle; }
+  th { font-size:1.6rem; color:var(--blue); }
+  .barre { display:inline-block; height:14px; background:var(--green); border-radius:7px; vertical-align:middle; margin-right:6px; }
+  .st-joue { color:var(--blue); } .st-gagne { color:var(--green); font-weight:700; } .st-perdu { color:var(--red); } .st-attente, .st-fini { color:#8c8477; }
+  .warn { color:#c77700; font-weight:700; }
+  .off { opacity:.45; }
+  .x { font-size:1.1rem; padding:0 8px; box-shadow:1px 2px 0 var(--ink); }
+  .cols { display:grid; grid-template-columns:330px 1fr; gap:16px; }
+  @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+  .secretprof { text-align:center; }
+  .secretprof .grand { width:170px; margin:0 auto; background:#fff; border:3px solid var(--ink); border-radius:12px; }
+  .secretprof .grand svg { display:block; width:100%; }
+  .secretprof .nomsecret { font-size:3rem; font-weight:700; color:var(--red); }
+  .masque { filter:blur(18px); }
+  .statut { position:fixed; bottom:8px; right:12px; font-size:1.2rem; background:#fff; border:2px solid var(--ink); border-radius:8px; padding:0 8px; }
+  a.retour { font-size:1.4rem; color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ ACCUEIL ============ -->
+  <section id="accueil">
+    <h1>🕵️ Qui est-ce ?</h1>
+    <p class="center muted" style="font-size:1.6rem;margin:0">Pose tes questions à l'oral, élimine les personnages, trouve le bon !</p>
+    <div class="choix">
+      <div class="board">
+        <h2>🎒 Je suis élève</h2>
+        <p style="font-size:1.4rem;margin:4px 0">Ton prénom</p>
+        <input id="inNom" maxlength="20" autocomplete="off">
+        <p style="font-size:1.4rem;margin:8px 0 4px">Code de la partie</p>
+        <input id="inCode" maxlength="4" autocomplete="off" style="text-transform:uppercase;letter-spacing:6px">
+        <div class="err" id="errEleve"></div>
+        <button class="blue" id="btnJoin" style="width:100%">Rejoindre</button>
+      </div>
+      <div class="board">
+        <h2>🧑‍🏫 Je suis le prof</h2>
+        <div class="modes">
+          <label><input type="radio" name="mode" value="duel" checked style="width:auto"> ⚔️ Duels 1 contre 1</label>
+          <label><input type="radio" name="mode" value="classe" style="width:auto"> 🏫 La classe contre le prof</label>
+        </div>
+        <div class="err"></div>
+        <button class="red" id="btnCreate" style="width:100%">Créer une partie</button>
+      </div>
+    </div>
+    <p class="center"><a class="retour" href="/">← Retour aux jeux</a></p>
+  </section>
+
+  <!-- ============ ÉLÈVE ============ -->
+  <section id="eleve" class="hidden">
+    <div class="board">
+      <div class="bandeau">
+        <div class="secret" id="boxSecret">
+          <div class="grand" id="secretImg"></div>
+          <div>
+            <div class="titre">Ton personnage secret</div>
+            <div class="nomsecret" id="secretNom"></div>
+            <button id="btnCache" style="font-size:1.2rem;padding:0 10px;margin-top:4px">🙈 Cacher</button>
+          </div>
+        </div>
+        <div class="infos">
+          <div class="gros" id="eTitre"></div>
+          <div id="eSousTitre"></div>
+          <div class="compteur" id="eCompteur"></div>
+          <div class="row">
+            <button class="green" id="btnDevine">🎯 Je devine !</button>
+            <button id="btnToutRemettre" style="font-size:1.2rem">↺ Tout remettre</button>
+          </div>
+        </div>
+      </div>
+      <div id="eAttente" class="center hidden" style="padding:40px 0">
+        <div class="gros" id="eAttenteTxt">En attente du prof…</div>
+        <p class="muted" style="font-size:1.6rem" id="eAttenteSous"></p>
+      </div>
+      <div class="grille" id="eGrille"></div>
+      <details class="aide">
+        <summary>💬 Aide pour poser tes questions</summary>
+        <ul>
+          <li>Est-ce que c'est <b>une fille</b> ? <b>un garçon</b> ?</li>
+          <li>Est-ce qu'il / elle a <b>les cheveux blonds</b> ? <b>bruns</b> ? <b>roux</b> ? <b>noirs</b> ? <b>gris</b> ?</li>
+          <li>Est-ce qu'il / elle a <b>les cheveux courts</b> ? <b>longs</b> ?</li>
+          <li>Est-ce qu'il est <b>chauve</b> ?</li>
+          <li>Est-ce qu'il a <b>une barbe</b> ?</li>
+          <li>Est-ce qu'il / elle porte <b>des lunettes</b> ?</li>
+          <li>… <b>un bonnet</b> ? <b>un chapeau</b> ? <b>une casquette</b> ?</li>
+          <li>… <b>une écharpe</b> ? <b>des gants</b> ? <b>une ceinture</b> ?</li>
+          <li>… <b>des bottes</b> ? <b>une jupe</b> ? <b>un pantalon</b> ?</li>
+          <li>… <b>des boucles d'oreilles</b> ?</li>
+          <li>Est-ce qu'il / elle a <b>un parapluie</b> ?</li>
+          <li>Est-ce que son pull est <b>rouge</b> ? <b>bleu</b> ? <b>vert</b> ? <b>jaune</b> ? <b>violet</b> ?</li>
+        </ul>
+        <div class="muted">On répond seulement par <b>Oui</b> ou par <b>Non</b> !</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ PROF ============ -->
+  <section id="prof" class="hidden">
+    <div class="board">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div style="font-size:1.6rem">Code de la partie :</div>
+          <div class="code" id="pCode"></div>
+          <div class="muted" style="font-size:1.3rem" id="pUrl"></div>
+        </div>
+        <div style="text-align:right">
+          <div class="gros" id="pModeTxt"></div>
+          <div class="row" style="justify-content:flex-end;margin-top:6px">
+            <button id="pModeDuel">⚔️ Duels</button>
+            <button id="pModeClasse">🏫 Classe</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols" style="margin-top:14px">
+      <div class="board">
+        <div id="pChoix">
+          <h2 id="pChoixTitre">Prêt ?</h2>
+          <div id="pChoixClasse" class="hidden">
+            <p style="font-size:1.4rem;margin:2px 0">Choisis ton personnage secret (ou laisse le hasard) :</p>
+            <div class="grille" id="pGrilleChoix" style="grid-template-columns:repeat(6,1fr);gap:4px"></div>
+            <p style="font-size:1.4rem" id="pChoixNom">🎲 Au hasard</p>
+          </div>
+          <button class="green" id="pStart" style="width:100%;margin-top:8px">▶ Lancer la manche</button>
+        </div>
+        <div id="pEnJeu" class="hidden">
+          <div class="secretprof" id="pSecretBox">
+            <div style="font-size:1.6rem" id="pSecretTitre">Ton personnage secret</div>
+            <div id="pSecretWrap"><div class="grand" id="pSecretImg"></div><div class="nomsecret" id="pSecretNom"></div></div>
+            <button id="pMasque" style="font-size:1.2rem">🙈 Masquer (si tu projettes)</button>
+          </div>
+          <div class="row" style="margin-top:14px;justify-content:center">
+            <button id="pReveal">👀 Révéler la réponse</button>
+            <button class="green" id="pNext">▶ Nouvelle manche</button>
+          </div>
+          <div class="center" style="margin-top:8px"><button id="pStop" style="font-size:1.2rem">⏹ Arrêter / changer de mode</button></div>
+        </div>
+      </div>
+
+      <div class="board">
+        <div class="row" style="justify-content:space-between">
+          <h2 id="pListeTitre">Élèves</h2>
+          <button id="pRaz" style="font-size:1.2rem">Remettre les scores à 0</button>
+        </div>
+        <div id="pListe"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="modal" class="overlay hidden"><div class="board" id="modalBox"></div></div>
+<div class="statut" id="statut">connexion…</div>
+
+<script>
+// =====================================================================
+//  PERSONNAGES
+// =====================================================================
+// s:sexe h:cheveux l:longueur(c court/l long/x chauve) lu:lunettes t:tête(bonnet/chapeau/casquette)
+// e:écharpe g:gants ce:ceinture b:bottes p:parapluie ba:barbe bo:boucles pu:pull peau ju:jupe
+const P = [
+  ['Léa','F','blond','l',0,'bonnet',1,1,0,1,0,0,0,'rouge',1,0],
+  ['Chloé','F','brun','l',1,'',0,0,1,0,1,0,1,'bleu',2,1],
+  ['Inès','F','noir','l',0,'chapeau',0,0,1,1,0,0,1,'vert',3,0],
+  ['Manon','F','roux','c',1,'',1,0,0,0,0,0,0,'jaune',1,1],
+  ['Camille','F','blond','c',0,'casquette',0,1,1,0,0,0,0,'violet',2,0],
+  ['Sarah','F','brun','c',0,'',0,0,0,1,1,0,1,'rouge',3,1],
+  ['Zoé','F','roux','l',0,'bonnet',0,0,1,0,0,0,0,'bleu',1,0],
+  ['Jade','F','noir','c',1,'chapeau',1,1,0,1,0,0,0,'rouge',2,0],
+  ['Louise','F','gris','l',1,'',1,0,0,0,1,0,1,'violet',1,1],
+  ['Amira','F','noir','l',0,'',0,1,1,1,0,0,0,'jaune',4,0],
+  ['Nina','F','brun','l',0,'bonnet',1,0,0,0,0,0,1,'vert',4,1],
+  ['Clara','F','blond','l',1,'casquette',0,0,1,1,0,0,0,'vert',2,0],
+  ['Hugo','M','blond','c',0,'',1,0,1,0,0,0,0,'vert',1,0],
+  ['Lucas','M','brun','c',1,'casquette',0,0,0,1,0,0,0,'rouge',2,0],
+  ['Nathan','M','noir','c',0,'bonnet',1,1,0,1,0,1,0,'bleu',4,0],
+  ['Karim','M','noir','c',0,'',0,0,1,0,1,1,0,'jaune',3,0],
+  ['Tom','M','roux','c',1,'',0,1,0,0,0,0,0,'violet',1,0],
+  ['Léo','M','blond','l',0,'chapeau',0,0,1,1,0,0,0,'bleu',2,0],
+  ['Mathis','M','brun','l',0,'',1,0,0,0,1,0,0,'rouge',3,0],
+  ['Adam','M','gris','x',1,'',0,0,1,0,0,1,0,'bleu',2,0],
+  ['Paul','M','gris','c',0,'chapeau',1,1,1,1,1,1,0,'vert',1,0],
+  ['Yanis','M','noir','c',0,'casquette',0,0,0,0,0,0,0,'violet',3,0],
+  ['Théo','M','roux','l',0,'bonnet',0,0,0,1,0,0,0,'jaune',1,0],
+  ['Victor','M','brun','x',0,'',0,1,0,0,0,1,0,'jaune',4,0],
+].map((r, i) => ({ id:i, nom:r[0], s:r[1], h:r[2], l:r[3], lu:r[4], t:r[5], e:r[6], g:r[7], ce:r[8], b:r[9], p:r[10], ba:r[11], bo:r[12], pu:r[13], peau:r[14], ju:r[15] }));
+
+const SKIN = ['', '#f8dcc8', '#eab892', '#c48a5e', '#8a5636'];
+const HAIR = { blond:'#f0c84a', brun:'#7b4a24', roux:'#d4622a', noir:'#2a2a2a', gris:'#c9c9c9' };
+const TOP  = { rouge:'#e5483b', bleu:'#3b7dd8', vert:'#3aa35a', jaune:'#f2c418', violet:'#8e5bd1' };
+const HATC = ['#e5483b', '#2e86c1', '#27ae60', '#8e44ad', '#f39c12', '#16a085'];
+const UMB  = ['#16a085', '#e67e22', '#c0392b', '#2980b9', '#8e44ad', '#27ae60'];
+const svgCache = {};
+
+function drawChar(c) {
+  if (svgCache[c.id]) return svgCache[c.id];
+  const sk = SKIN[c.peau], hc = HAIR[c.h], tc = TOP[c.pu], k = '#2d2d2d';
+  const hat = HATC[c.id % HATC.length], umb = UMB[c.id % UMB.length];
+  const scarfC = c.pu === 'rouge' || c.pu === 'violet' ? '#2e86c1' : '#e5483b';
+  let s = `<svg viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg" stroke="${k}" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round">`;
+  // cheveux longs (derrière)
+  if (c.l === 'l') s += c.s === 'F'
+    ? `<path d="M33,34 Q29,62 35,72 L65,72 Q71,62 67,34 Z" fill="${hc}"/>`
+    : `<path d="M34,34 Q32,52 36,60 L64,60 Q68,52 66,34 Z" fill="${hc}"/>`;
+  // jambes / pantalon / jupe
+  if (c.ju) {
+    s += `<rect x="40" y="114" width="7" height="26" fill="${sk}"/><rect x="53" y="114" width="7" height="26" fill="${sk}"/>`;
+    s += `<path d="M35,98 L65,98 L71,121 L29,121 Z" fill="#34407a"/>`;
+  } else {
+    s += `<rect x="37.5" y="99" width="11" height="40" rx="2" fill="#3b4a63"/><rect x="51.5" y="99" width="11" height="40" rx="2" fill="#3b4a63"/>`;
+  }
+  // chaussures ou bottes
+  if (c.b) s += `<path d="M37,121 h12 v21 h-15 q-3,0 -3,-3 q0,-3 6,-3 Z" fill="#7a4520"/><path d="M51,121 h12 v15 q6,0 6,3 q0,3 -3,3 h-15 Z" fill="#7a4520"/><line x1="37" y1="125" x2="49" y2="125" stroke="#b07040"/><line x1="51" y1="125" x2="63" y2="125" stroke="#b07040"/>`;
+  else s += `<ellipse cx="41" cy="141" rx="8" ry="3.8" fill="#3a2a1e"/><ellipse cx="59" cy="141" rx="8" ry="3.8" fill="#3a2a1e"/>`;
+  // corps (pull)
+  s += `<path d="M31,61 Q50,54 69,61 L66,101 L34,101 Z" fill="${tc}"/>`;
+  // ceinture
+  if (c.ce) s += `<rect x="33.5" y="94" width="33" height="6" fill="#5a3412"/><rect x="46.5" y="93.3" width="7" height="7.4" rx="1" fill="none" stroke="#e6b800" stroke-width="1.8"/>`;
+  // parapluie (fermé, tenu à la main droite)
+  if (c.p) s += `<path d="M80,106 L87,140 L80,146 L73,140 Z" fill="${umb}"/><line x1="80" y1="106" x2="80" y2="146" stroke-width="0.9"/><line x1="80" y1="146" x2="80" y2="152" stroke="#555" stroke-width="2"/><path d="M80,106 L80,96 Q80,90 75,90 Q71,90 71,95" fill="none" stroke="#555" stroke-width="2.4"/>`;
+  // bras
+  s += `<rect x="24" y="61" width="9" height="39" rx="4.5" fill="${tc}" transform="rotate(6 28 61)"/><rect x="67" y="61" width="9" height="39" rx="4.5" fill="${tc}" transform="rotate(-6 72 61)"/>`;
+  // mains ou gants
+  if (c.g) s += `<circle cx="24.5" cy="101" r="5.6" fill="#1f3a5f"/><circle cx="75.5" cy="101" r="5.6" fill="#1f3a5f"/><path d="M20.5,96.5 h8 M71.5,96.5 h8" stroke="#fff" stroke-width="1.6"/>`;
+  else s += `<circle cx="24.5" cy="101" r="4.4" fill="${sk}"/><circle cx="75.5" cy="101" r="4.4" fill="${sk}"/>`;
+  // cou, oreilles, tête
+  s += `<rect x="45" y="48" width="10" height="11" fill="${sk}"/>`;
+  s += `<circle cx="35" cy="38" r="3.4" fill="${sk}"/><circle cx="65" cy="38" r="3.4" fill="${sk}"/>`;
+  s += `<circle cx="50" cy="36" r="15" fill="${sk}"/>`;
+  // barbe
+  if (c.ba) s += `<path d="M35.5,37 Q36,54 50,55 Q64,54 64.5,37 Q61,46 50,46.5 Q39,46 35.5,37 Z" fill="${hc}"/>`;
+  // visage
+  s += `<circle cx="44.5" cy="36" r="1.9" fill="${k}" stroke="none"/><circle cx="55.5" cy="36" r="1.9" fill="${k}" stroke="none"/>`;
+  s += `<circle cx="41" cy="42" r="2.4" fill="#ff8a80" opacity=".35" stroke="none"/><circle cx="59" cy="42" r="2.4" fill="#ff8a80" opacity=".35" stroke="none"/>`;
+  s += `<path d="M45.5,43 Q50,47 54.5,43" fill="none" stroke="${c.ba ? '#fff' : k}"/>`;
+  // cheveux (dessus)
+  if (c.l === 'x') s += `<ellipse cx="36.5" cy="31" rx="2.6" ry="4.5" fill="${hc}"/><ellipse cx="63.5" cy="31" rx="2.6" ry="4.5" fill="${hc}"/>`;
+  else if (c.l === 'c') s += `<path d="M35,35 Q34,19 50,19 Q66,19 65,35 Q63,27 56,26 Q50,29 43,26 Q37,27 35,35 Z" fill="${hc}"/>`;
+  else s += `<path d="M34.5,40 Q32,19 50,19 Q68,19 65.5,40 Q63,28 55,25 Q46,30 38,27 Q35.5,31 34.5,40 Z" fill="${hc}"/>`;
+  // boucles d'oreilles
+  if (c.bo) s += `<circle cx="35" cy="43.5" r="2.1" fill="#f1c40f"/><circle cx="65" cy="43.5" r="2.1" fill="#f1c40f"/>`;
+  // lunettes
+  if (c.lu) s += `<circle cx="44.5" cy="36" r="5" fill="#fff" fill-opacity=".25" stroke-width="1.6"/><circle cx="55.5" cy="36" r="5" fill="#fff" fill-opacity=".25" stroke-width="1.6"/><line x1="49.5" y1="36" x2="50.5" y2="36" stroke-width="1.6"/><line x1="39.5" y1="35" x2="36" y2="34" stroke-width="1.4"/><line x1="60.5" y1="35" x2="64" y2="34" stroke-width="1.4"/>`;
+  // écharpe
+  if (c.e) s += `<path d="M39,51 Q50,58 61,51 L62.5,58 Q50,65 37.5,58 Z" fill="${scarfC}"/><path d="M53,59 L60,58 L61,80 L54,81 Z" fill="${scarfC}"/><path d="M53.6,66 L60.4,65.3 M54.1,72 L60.7,71.4" stroke="#fff" stroke-width="2"/><path d="M54,81 l0,3 M56.5,80.7 l0,3 M59,80.4 l0,3" stroke="${scarfC}" stroke-width="1.5"/>`;
+  // couvre-chef
+  if (c.t === 'bonnet') s += `<path d="M34,30 Q34,12 50,12 Q66,12 66,30 Z" fill="${hat}"/><rect x="32.5" y="25.5" width="35" height="7" rx="3.5" fill="${hat}"/><path d="M36,27 v4 M40,27 v4 M44,27 v4 M48,27 v4 M52,27 v4 M56,27 v4 M60,27 v4 M64,27 v4" stroke="#fff" stroke-width="1" opacity=".7"/><circle cx="50" cy="10.5" r="4.5" fill="#fff"/>`;
+  else if (c.t === 'chapeau') s += `<ellipse cx="50" cy="26.5" rx="23" ry="4.5" fill="#4a3426"/><path d="M38,26 L39,10 Q50,7 61,10 L62,26 Z" fill="#4a3426"/><rect x="38.4" y="20" width="23.2" height="4.5" fill="${hat}"/>`;
+  else if (c.t === 'casquette') s += `<path d="M35,28 Q35,14 50,14 Q65,14 65,28 Z" fill="${hat}"/><path d="M48,25 Q68,22 79,28.5 Q66,31.5 48,29 Z" fill="${hat}"/><circle cx="50" cy="14.5" r="1.6" fill="${hat}"/>`;
+  s += `</svg>`;
+  return (svgCache[c.id] = s);
+}
+
+// =====================================================================
+//  CONNEXION
+// =====================================================================
+const $ = (id) => document.getElementById(id);
+let ws, S = null, role = null;
+let localElim = new Set(), syncedRound = -1, guessing = false, secretCache = false, profMasque = false, pChoix = null;
+
+function connect() {
+  if (!location.host) { $('statut').textContent = '⚠️ Ouvre le jeu depuis ton site (…onrender.com/qui-est-ce/), pas en double-cliquant sur le fichier'; return; }
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => {
+    $('statut').textContent = '🟢 connecté';
+    const pr = JSON.parse(sessionStorage.getItem('qec_prof') || 'null');
+    const el = JSON.parse(sessionStorage.getItem('qec_eleve') || 'null');
+    if (pr) send({ type:'qec_profRejoin', code:pr.code, key:pr.key });
+    else if (el) send({ type:'qec_join', code:el.code, name:el.name, key:el.key });
+  };
+  ws.onclose = () => { $('statut').textContent = '🔴 reconnexion…'; setTimeout(connect, 1500); };
+  ws.onmessage = (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (!m || typeof m.type !== 'string' || !m.type.startsWith('qec_')) return;
+    if (m.type === 'qec_created') { sessionStorage.setItem('qec_prof', JSON.stringify({ code:m.code, key:m.key })); }
+    if (m.type === 'qec_joined') { sessionStorage.setItem('qec_eleve', JSON.stringify({ code:m.code, name:m.name, key:m.key })); }
+    if (m.type === 'qec_error') { $('errEleve').textContent = m.msg; if (m.reset) sessionStorage.removeItem('qec_eleve'); show('accueil'); }
+    if (m.type === 'qec_reset') { sessionStorage.removeItem('qec_prof'); sessionStorage.removeItem('qec_eleve'); $('errEleve').textContent = m.msg || ''; show('accueil'); }
+    if (m.type === 'qec_state') { S = m; role = m.role; render(); }
+  };
+}
+const send = (o) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+function show(id) { ['accueil','eleve','prof'].forEach((x) => $(x).classList.toggle('hidden', x !== id)); }
+const charById = (id) => P[id];
+const mini = (id) => id === null || id === undefined ? '' : `<span class="mini" title="${P[id].nom}">${drawChar(P[id])}</span>`;
+
+// =====================================================================
+//  ACCUEIL
+// =====================================================================
+$('btnJoin').onclick = () => {
+  const name = $('inNom').value.trim(), code = $('inCode').value.trim().toUpperCase();
+  if (!name || code.length !== 4) { $('errEleve').textContent = 'Écris ton prénom et le code (4 lettres).'; return; }
+  $('errEleve').textContent = '';
+  sessionStorage.removeItem('qec_prof');
+  const old = JSON.parse(sessionStorage.getItem('qec_eleve') || 'null');
+  send({ type:'qec_join', code, name, key: old && old.code === code ? old.key : undefined });
+};
+$('inCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnJoin').click(); });
+$('btnCreate').onclick = () => {
+  sessionStorage.removeItem('qec_eleve');
+  send({ type:'qec_create', mode: document.querySelector('input[name=mode]:checked').value });
+};
+
+// =====================================================================
+//  RENDU
+// =====================================================================
+function render() { if (role === 'prof') renderProf(); else renderEleve(); }
+
+// ---------------- ÉLÈVE ----------------
+const STATUS_TXT = { joue:'en jeu', gagne:'gagné 🏆', perdu:'perdu', attente:'en attente', fini:'terminé' };
+
+function renderEleve() {
+  show('eleve');
+  const me = S.me, duel = S.mode === 'duel';
+  if (S.round !== syncedRound) { localElim = new Set(me.eliminated); syncedRound = S.round; guessing = false; }
+  const enJeu = S.active && me.status !== 'attente';
+
+  $('eAttente').classList.toggle('hidden', enJeu);
+  $('eGrille').classList.toggle('hidden', !enJeu);
+  $('boxSecret').classList.toggle('hidden', !(enJeu && duel && me.secret !== null));
+  if (!enJeu) {
+    $('eTitre').textContent = `Salut ${me.name} !`;
+    $('eSousTitre').textContent = `Partie ${S.code} · ${S.nbJoueurs} élève(s) connecté(s) · ton score : ${me.score}`;
+    $('eCompteur').textContent = '';
+    $('btnDevine').classList.add('hidden'); $('btnToutRemettre').classList.add('hidden');
+    $('eAttenteTxt').textContent = S.active ? 'Une manche est en cours…' : 'En attente du prof…';
+    $('eAttenteSous').textContent = S.active ? 'Tu joueras à la prochaine manche !' : (duel ? 'Mode : duels 1 contre 1 ⚔️' : 'Mode : la classe contre le prof 🏫');
+    closeModal();
+    return;
+  }
+  $('btnDevine').classList.toggle('hidden', me.status !== 'joue');
+  $('btnToutRemettre').classList.toggle('hidden', me.status !== 'joue');
+  $('btnDevine').textContent = guessing ? '✋ Annuler' : '🎯 Je devine !';
+  $('btnDevine').className = guessing ? 'red' : 'green';
+
+  if (duel && me.secret !== null) {
+    $('secretImg').innerHTML = drawChar(P[me.secret]);
+    $('secretNom').textContent = P[me.secret].nom;
+    $('secretImg').classList.toggle('masque', secretCache); $('secretNom').classList.toggle('masque', secretCache);
+    $('btnCache').textContent = secretCache ? '👁 Montrer' : '🙈 Cacher';
+  }
+  $('eTitre').textContent = duel ? `⚔️ Tu joues contre ${S.opp ? S.opp.name : '?'}` : '🏫 Devine le personnage du prof !';
+  $('eSousTitre').textContent = duel
+    ? (S.opp && S.opp.name === 'le prof' ? 'Pose tes questions au prof à voix haute.' : `Chacun son tour : pose une question à ${S.opp ? S.opp.name : 'ton adversaire'}, à voix haute.`)
+    : 'Lève la main et pose ta question au prof, à voix haute.';
+  const rest = 24 - localElim.size;
+  $('eCompteur').innerHTML = `Il te reste <b>${rest}</b> personnage${rest > 1 ? 's' : ''}` +
+    (duel && S.opp && S.opp.remaining !== null ? ` · à ${S.opp.name} : <b>${S.opp.remaining}</b>` : '') + ` · score : <b>${me.score}</b>`;
+
+  const g = $('eGrille');
+  g.classList.toggle('devine', guessing);
+  g.innerHTML = P.map((c) => `<div class="carte ${localElim.has(c.id) ? 'out' : ''}" data-id="${c.id}">${drawChar(c)}<div class="nom">${c.nom}</div></div>`).join('');
+
+  if (me.status !== 'joue') showResult(); else if (!$('modal').dataset.confirm) closeModal();
+}
+
+$('eGrille').addEventListener('click', (e) => {
+  const card = e.target.closest('.carte'); if (!card || !S || S.me.status !== 'joue') return;
+  const id = +card.dataset.id;
+  if (guessing) { if (!localElim.has(id)) confirmGuess(id); return; }
+  if (localElim.has(id)) localElim.delete(id); else localElim.add(id);
+  send({ type:'qec_flip', eliminated:[...localElim] });
+  renderEleve();
+});
+$('btnDevine').onclick = () => { guessing = !guessing; renderEleve(); };
+$('btnToutRemettre').onclick = () => { localElim.clear(); send({ type:'qec_flip', eliminated:[] }); renderEleve(); };
+$('btnCache').onclick = () => { secretCache = !secretCache; renderEleve(); };
+
+function confirmGuess(id) {
+  $('modal').dataset.confirm = '1';
+  openModal(`<div style="font-size:1.8rem">Tu proposes…</div>${mini(id)}<div class="gros">${P[id].nom} ?</div>
+    <p style="font-size:1.4rem">Attention : si tu te trompes, tu perds la manche !</p>
+    <div class="row" style="justify-content:center"><button id="mNon">Non, attends</button><button class="green" id="mOui">Oui, c'est lui / elle !</button></div>`);
+  $('mNon').onclick = () => { delete $('modal').dataset.confirm; closeModal(); };
+  $('mOui').onclick = () => { delete $('modal').dataset.confirm; guessing = false; closeModal(); send({ type:'qec_guess', id }); };
+}
+
+function showResult() {
+  const me = S.me, t = S.target;
+  let titre, couleur, txt = '';
+  if (me.status === 'gagne') {
+    titre = 'Bravo ! 🎉'; couleur = 'var(--green)';
+    txt = me.why === 'adverse' ? `${S.opp.name} s'est trompé(e)… tu gagnes la manche !` : (S.mode === 'classe' && me.rank ? `Tu as trouvé ! Tu es ${me.rank === 1 ? '1er / 1re 🥇' : me.rank + 'e'}.` : 'Tu as trouvé !');
+  } else if (me.status === 'perdu') {
+    titre = 'Perdu…'; couleur = 'var(--red)';
+    txt = me.why === 'trouve' ? `${S.opp.name} a trouvé ton personnage !` : (me.guess !== null ? `Ce n'était pas ${P[me.guess].nom}.` : '');
+  } else { titre = 'Manche terminée'; couleur = 'var(--blue)'; }
+  const sol = t !== null && t !== undefined ? `<p style="font-size:1.6rem;margin:10px 0 0">${S.mode === 'classe' ? 'Le personnage du prof était' : 'Le personnage à trouver était'} :</p>${mini(t)}<div class="gros">${P[t].nom}</div>`
+    : `<p class="muted" style="font-size:1.4rem">La réponse sera révélée à la fin de la manche.</p>`;
+  openModal(`<div class="resultat" style="color:${couleur}">${titre}</div><div style="font-size:1.6rem">${txt}</div>${sol}
+    <p class="muted" style="font-size:1.4rem">Ton score : ${me.score} · attends la prochaine manche…</p>
+    <button id="mVoir" style="font-size:1.2rem">Voir mon plateau</button>`);
+  $('mVoir').onclick = () => { closeModal(); $('modal').dataset.vu = S.round; };
+  if ($('modal').dataset.vu == S.round) closeModal();
+}
+function openModal(html) { $('modalBox').innerHTML = html; $('modal').classList.remove('hidden'); }
+function closeModal() { $('modal').classList.add('hidden'); }
+
+// ---------------- PROF ----------------
+function renderProf() {
+  show('prof');
+  closeModal();
+  const duel = S.mode === 'duel';
+  $('pCode').textContent = S.code;
+  $('pUrl').textContent = location.host + location.pathname;
+  $('pModeTxt').textContent = duel ? '⚔️ Duels 1 contre 1' : '🏫 La classe contre le prof';
+  $('pModeDuel').classList.toggle('blue', duel); $('pModeClasse').classList.toggle('blue', !duel);
+  $('pModeDuel').disabled = $('pModeClasse').disabled = S.active;
+
+  $('pChoix').classList.toggle('hidden', S.active);
+  $('pEnJeu').classList.toggle('hidden', !S.active);
+  const nb = S.players.length, co = S.players.filter((p) => p.connected).length;
+  $('pChoixTitre').textContent = nb ? `${co} élève(s) connecté(s)` : 'En attente des élèves…';
+  $('pChoixClasse').classList.toggle('hidden', duel);
+  $('pStart').disabled = co === 0;
+  if (!duel && !S.active) {
+    $('pGrilleChoix').innerHTML = P.map((c) => `<div class="carte ${pChoix === c.id ? 'pick' : ''}" data-id="${c.id}" style="padding:1px">${drawChar(c)}<div class="nom" style="font-size:1rem">${c.nom}</div></div>`).join('');
+    $('pChoixNom').textContent = pChoix === null ? '🎲 Au hasard (clique sur un personnage pour le choisir)' : `✅ Tu as choisi : ${P[pChoix].nom}`;
+  }
+
+  if (S.active) {
+    const sec = duel ? S.profSecret : S.secret;
+    $('pSecretBox').classList.toggle('hidden', sec === null);
+    if (sec !== null) {
+      $('pSecretTitre').textContent = duel ? `Ton personnage (tu joues contre ${(S.players.find((p) => p.opp === 'prof') || {}).name || 'un élève'})` : 'Ton personnage secret';
+      $('pSecretImg').innerHTML = drawChar(P[sec]); $('pSecretNom').textContent = P[sec].nom;
+      $('pSecretWrap').classList.toggle('masque', profMasque);
+      $('pMasque').textContent = profMasque ? '👁 Montrer' : '🙈 Masquer (si tu projettes)';
+    }
+    $('pReveal').disabled = S.revealed;
+  }
+
+  // Liste des élèves
+  $('pListeTitre').textContent = `Élèves (${nb}) · manche ${S.round}`;
+  if (!nb) { $('pListe').innerHTML = `<p class="muted" style="font-size:1.5rem">Les élèves vont sur <b>${location.host}${location.pathname}</b> et tapent le code <b>${S.code}</b>.</p>`; return; }
+  const sorted = [...S.players].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  const ligne = (p) => {
+    const bar = S.active && p.status !== 'attente' ? `<span class="barre" style="width:${p.remaining * 4}px"></span>${p.remaining}` : '';
+    const warn = S.active && p.status === 'joue' && p.targetGone ? ` <span class="warn" title="Cet élève a éliminé le bon personnage : il a sûrement mal compris une réponse">⚠️ a éliminé le bon</span>` : '';
+    const guess = p.status === 'perdu' && p.guess !== null ? ` (a dit ${P[p.guess].nom})` : '';
+    return `<tr class="${p.connected ? '' : 'off'}"><td><b>${p.name}</b>${p.connected ? '' : ' 💤'}</td>
+      ${duel ? `<td>${S.active && p.secret !== null ? mini(p.secret) : ''}</td><td>${S.active && p.oppName ? 'vs ' + p.oppName : ''}</td>` : ''}
+      <td>${bar}</td><td class="st-${p.status}">${STATUS_TXT[p.status] || ''}${p.rank ? ' #' + p.rank : ''}${guess}${warn}</td>
+      <td><b>${p.score}</b></td><td><button class="x" data-kick="${p.id}" title="Retirer">✕</button></td></tr>`;
+  };
+  $('pListe').innerHTML = `<table><tr><th>Élève</th>${duel ? '<th>Son perso</th><th>Adversaire</th>' : ''}<th>Restants</th><th>Statut</th><th>Pts</th><th></th></tr>${sorted.map(ligne).join('')}</table>`;
+}
+
+$('pGrilleChoix').addEventListener('click', (e) => {
+  const card = e.target.closest('.carte'); if (!card) return;
+  const id = +card.dataset.id; pChoix = pChoix === id ? null : id; renderProf();
+});
+$('pModeDuel').onclick = () => send({ type:'qec_mode', mode:'duel' });
+$('pModeClasse').onclick = () => send({ type:'qec_mode', mode:'classe' });
+$('pStart').onclick = () => { send({ type:'qec_start', secret: pChoix }); pChoix = null; };
+// En mode classe, « Nouvelle manche » revient au choix du personnage ; en duel, ça relance directement
+$('pNext').onclick = () => send(S.mode === 'classe' ? { type:'qec_stop' } : { type:'qec_start', secret: null });
+$('pReveal').onclick = () => send({ type:'qec_reveal' });
+$('pStop').onclick = () => send({ type:'qec_stop' });
+$('pRaz').onclick = () => { if (confirm('Remettre tous les scores à 0 ?')) send({ type:'qec_resetScores' }); };
+$('pMasque').onclick = () => { profMasque = !profMasque; renderProf(); };
+$('pListe').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-kick]'); if (!b) return;
+  const p = S.players.find((x) => x.id === b.dataset.kick);
+  if (p && confirm(`Retirer ${p.name} de la partie ?`)) send({ type:'qec_kick', id:p.id });
+});
+
+connect();
+</script>
+</body>
+</html>
