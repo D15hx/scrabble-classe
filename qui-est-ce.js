@@ -65,6 +65,7 @@ function handle(ws, d) {
       players: new Map(), round: 0, active: false, revealed: false,
       secret: null, profSecret: null, winners: 0, last: Date.now(),
       used: new Set(), board: [], nextBoard: [],
+      profName: String(d.name || '').trim().slice(0, 20) || 'le prof', profElim: [], profStatus: null, profGuess: null,
     };
     room.nextBoard = makeBoard(room);
     rooms.set(code, room);
@@ -118,6 +119,20 @@ function handle(ws, d) {
     if (d.type === 'qec_reveal') {
       room.revealed = true;
       for (const p of room.players.values()) if (p.status === 'joue') p.status = 'fini';
+      if (room.profStatus === 'joue') room.profStatus = 'fini';
+      return broadcast(room);
+    }
+    if (d.type === 'qec_profFlip') {
+      if (Array.isArray(d.eliminated)) room.profElim = [...new Set(d.eliminated.filter(validId))];
+      return broadcast(room);
+    }
+    if (d.type === 'qec_profGuess') {
+      if (!room.active || room.profStatus !== 'joue' || !validId(d.id)) return;
+      const s = [...room.players.values()].find((x) => x.opp === 'prof' && x.status === 'joue');
+      if (!s) return;
+      room.profGuess = d.id;
+      if (d.id === s.secret) { room.profStatus = 'gagne'; s.status = 'perdu'; s.why = 'trouve'; }
+      else { room.profStatus = 'perdu'; s.status = 'gagne'; s.score++; s.why = 'adverse'; }
       return broadcast(room);
     }
     if (d.type === 'qec_stop') { room.active = false; room.revealed = false; for (const p of room.players.values()) { p.status = 'attente'; } return broadcast(room); }
@@ -145,13 +160,14 @@ function handle(ws, d) {
       const o = room.players.get(p.opp);
       if (ok) { p.status = 'gagne'; p.score++; if (o && o.status === 'joue') { o.status = 'perdu'; o.why = 'trouve'; } }
       else { p.status = 'perdu'; p.why = 'erreur'; if (o && o.status === 'joue') { o.status = 'gagne'; o.score++; o.why = 'adverse'; } }
+      if (p.opp === 'prof' && room.profStatus === 'joue') room.profStatus = ok ? 'perdu' : 'gagne';
     }
     return broadcast(room);
   }
 }
 
 function startRound(room, chosen) {
-  room.round++; room.active = true; room.revealed = false; room.winners = 0; room.profSecret = null;
+  room.round++; room.active = true; room.revealed = false; room.winners = 0; room.profSecret = null; room.profElim = []; room.profStatus = null; room.profGuess = null;
   room.board = room.nextBoard.length === NB_PERSOS ? room.nextBoard : makeBoard(room);
   room.board.forEach((i) => room.used.add(i));
   room.nextBoard = makeBoard(room);
@@ -170,7 +186,7 @@ function startRound(room, chosen) {
     }
     if (present.length % 2 === 1) { // élève seul : il joue contre le prof
       const s = present[present.length - 1];
-      s.secret = randPerso(); room.profSecret = randPerso(s.secret);
+      s.secret = randPerso(); room.profSecret = randPerso(s.secret); room.profStatus = 'joue';
       s.opp = 'prof'; s.status = 'joue';
     }
   }
@@ -181,7 +197,7 @@ function startRound(room, chosen) {
 function fixPairsAfterLeave(room, goneId) {
   for (const p of room.players.values()) {
     if (p.opp === goneId && p.status === 'joue') {
-      if (room.profSecret === null) { p.opp = 'prof'; room.profSecret = randPerso(p.secret); }
+      if (room.profSecret === null) { p.opp = 'prof'; room.profSecret = randPerso(p.secret); room.profStatus = 'joue'; room.profElim = []; }
       else { p.status = 'attente'; p.opp = null; }
     }
   }
@@ -192,17 +208,19 @@ function broadcast(room) {
   const players = [...room.players.values()];
   const classement = players.map((p) => ({ name: p.name, score: p.score })).sort((a, b) => b.score - a.score);
   const remaining = (p) => NB_PERSOS - p.eliminated.length;
-  const oppName = (p) => (p.opp === 'prof' ? 'le prof' : (room.players.get(p.opp) || {}).name || null);
+  const oppName = (p) => (p.opp === 'prof' ? room.profName : (room.players.get(p.opp) || {}).name || null);
 
   send(room.profWs, {
     type: 'qec_state', role: 'prof', code: room.code, mode: room.mode, round: room.round,
     active: room.active, revealed: room.revealed, secret: room.secret, profSecret: room.profSecret,
     board: room.board, nextBoard: room.nextBoard,
+    profName: room.profName, profElim: room.profElim, profStatus: room.profStatus, profGuess: room.profGuess,
+    profTarget: (() => { const s = players.find((x) => x.opp === 'prof'); return s && room.profStatus && room.profStatus !== 'joue' ? s.secret : null; })(),
     players: players.map((p) => {
       const t = room.active ? targetOf(room, p) : null;
       return {
         id: p.id, name: p.name, connected: p.connected, score: p.score, status: p.status, rank: p.rank,
-        remaining: remaining(p), secret: p.secret, opp: p.opp, oppName: oppName(p), guess: p.guess,
+        remaining: remaining(p), secret: (p.opp === 'prof' && room.profStatus === 'joue') ? null : p.secret, opp: p.opp, oppName: oppName(p), guess: p.guess,
         target: t, targetGone: t !== null && p.eliminated.includes(t),
       };
     }),
@@ -216,7 +234,7 @@ function broadcast(room) {
       type: 'qec_state', role: 'eleve', code: room.code, mode: room.mode, round: room.round,
       active: room.active, revealed: room.revealed, board: room.board,
       me: { name: p.name, score: p.score, status: p.status, why: p.why, rank: p.rank, secret: p.secret, eliminated: p.eliminated, guess: p.guess },
-      opp: p.opp ? { name: oppName(p), remaining: o ? remaining(o) : null } : null,
+      opp: p.opp ? { name: oppName(p), remaining: o ? remaining(o) : (p.opp === 'prof' ? NB_PERSOS - room.profElim.length : null) } : null,
       target: room.active && (done || room.revealed) && p.status !== 'attente' ? targetOf(room, p) : null,
       nbJoueurs: players.length, classement,
     });
