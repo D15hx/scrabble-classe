@@ -93,7 +93,7 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
       <div class="mode-card" id="mode-prof" onclick="selectMode('prof')">
         <div class="emoji">👨‍🏫</div>
         <h3>Mode Prof</h3>
-        <p>Le prof choisit les mots et observe sans jouer</p>
+        <p>Le prof choisit les mots et joue avec les apprenants</p>
       </div>
     </div>
     <div class="section-title" style="margin-top:1rem">Variante imposteur</div>
@@ -126,12 +126,14 @@ h1{font-size:24px;font-weight:700;margin-bottom:6px;text-align:center}
       <div class="field"><label>Mot des joueurs (ex: plage)</label><input id="word-a" placeholder="Ex: plage" maxlength="30"/></div>
       <div class="field"><label>Mot de l'imposteur (ex: piscine)</label><input id="word-b" placeholder="Ex: piscine" maxlength="30"/></div>
     </div>
-    <div class="field"><label>Nombre de joueurs</label>
+    <div class="field"><label>Nombre de joueurs (prof inclus)</label>
       <select id="max-players">
         <option value="3">3 joueurs</option>
         <option value="4">4 joueurs</option>
         <option value="5">5 joueurs</option>
         <option value="6">6 joueurs</option>
+        <option value="7">7 joueurs</option>
+        <option value="8" selected>8 joueurs</option>
       </select>
     </div>
     <button class="btn btn-purple" onclick="createRoom()">Créer la partie</button>
