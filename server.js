@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
+const quiEstCe = require('./qui-est-ce');
 
 const app = express();
 const server = http.createServer(app);
@@ -111,6 +112,7 @@ function createPetitBacGame(playerNames, playerColors, categories, targetScore, 
 }// ─── WEBSOCKET ──────────────────────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
+  quiEstCe.attach(ws); // jeu Qui est-ce ?
   ws.roomCode = null; ws.playerIndex = null; ws.playerName = null; ws.playerColor = '#2563eb';
 
   ws.on('message', (raw) => {
